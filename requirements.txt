@@ -26,3 +26,6 @@ google-auth-oauthlib
 chromadb
 llama-index-vector-stores-chroma
 sentence-transformers
+
+docx2txt
+pypdf
