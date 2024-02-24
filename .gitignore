@@ -1,0 +1,7 @@
+daata/
+store/
+.ipynb_checkpoints/
+__pycache__/
+.llama_index_env
+TempNote/
+Google_Credentials/

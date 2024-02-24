@@ -1,0 +1,28 @@
+# Python Version --> 3.11.0
+# Virtual Environment tool  --> venv 
+# Command for Command Prompt  :
+#           python -m venv .llama_index_env
+#           .llama_index_env\Scripts\activate
+#           pip install -r requirements.txt
+#
+# Command for Git Bash Prompts  :
+#           python -m venv .llama_index_env
+#           source .llama_index_env/Scripts/activate
+#           pip install -r requirements.txt
+#
+
+llama-index
+llama-index-embeddings-google
+llama-index-embeddings-huggingface
+llama-index-llms-gemini
+llama-index-readers-google
+
+# For Google Cloud API for Google Drive 
+google-api-python-client 
+google-auth-httplib2 
+google-auth-oauthlib
+
+
+chromadb
+llama-index-vector-stores-chroma
+sentence-transformers
