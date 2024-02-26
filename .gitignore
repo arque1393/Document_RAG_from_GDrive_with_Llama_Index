@@ -6,3 +6,5 @@ __pycache__/
 */.llama_ndex_env
 TempNote/
 Google_Credentials/
+.*/
+ChromaDB/
