@@ -14,8 +14,8 @@ if __name__ == '__main__':
         documents, show_progress=False
     )
     # print(nodes)
-    chroma_index = ChromaVectorStoreIndex(nodes,persist_dir=VECTOR_STORE_PATH, collection='Set1')
-    index = chroma_index.get_chroma_index()
-    # print("****************************************************",index)
-    index2 = chroma_index.load_vector_store(persist_dir=VECTOR_STORE_PATH, collection_name ='Set1')
+    chroma_index = ChromaVectorStoreIndex(persist_dir=VECTOR_STORE_PATH, collection='Set1')
+    index = chroma_index.create_index(nodes=nodes)
+    print("****************************************************",index)
+    index2 = chroma_index.load_index()
     print(index2)
