@@ -52,9 +52,9 @@ if __name__ == '__main__':
     
     while True :
         print("server is running")
-        query = input('Ask your Query : ')
-        print(query_engine.query(query))
-        # time.sleep(100)
+        # query = input('Ask your Query : ')
+        # print(query_engine.query(query))
+        time.sleep(100)
 
 
     
