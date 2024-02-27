@@ -14,3 +14,5 @@ LLM = Gemini()
 EMBED_MODEL =  HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 DRIVE_FOLDER_ID = '1sLmLETXRAUA1NAoJDf6TxnJ21SJiXzQ3';
 DRIVE_API_SCOPES = ["https://www.googleapis.com/auth/drive.activity.readonly"]
+
+MONITORING_TIME_DELAY  = 10 
