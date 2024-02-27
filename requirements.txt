@@ -16,6 +16,7 @@ llama-index-embeddings-google
 llama-index-embeddings-huggingface
 llama-index-llms-gemini
 llama-index-readers-google
+llama-index-extractors-entity
 
 # For Google Cloud API for Google Drive 
 google-api-python-client 
