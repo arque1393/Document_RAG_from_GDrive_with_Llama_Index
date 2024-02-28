@@ -3,6 +3,7 @@ from llama_index.core.node_parser import SentenceSplitter
 from llama_index.llms.gemini import Gemini
 
 from vector_store import ChromaVectorStoreIndex
+from document_processor import process_document
 from constants import VECTOR_STORE_PATH ,GOOGLE_CREDENTIALS_PATH
 from llama_index.readers.google import GoogleDriveReader
 from drive_utils import watch_drive_load_data
@@ -25,10 +26,11 @@ class RAG_Drive_retriever():
     def store_data(self,list_file_ids):
         try:
             documents = self.load_data(list_file_ids)    
-            node_parser = SentenceSplitter(chunk_size=1024, chunk_overlap=20)
-            nodes = node_parser.get_nodes_from_documents(
-                documents, show_progress=False
-            )
+            # node_parser = SentenceSplitter(chunk_size=1024, chunk_overlap=20)
+            # nodes = node_parser.get_nodes_from_documents(
+            #     documents, show_progress=False
+            # )
+            nodes = process_document(documents)
             self.chroma_index.create_index(nodes=nodes)
         except:
             print("No new data found")
