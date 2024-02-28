@@ -29,18 +29,8 @@ class RAG_Drive_retriever():
     def store_data(self,list_file_ids):
         try:
             documents = self.load_data(list_file_ids)    
-
-            # node_parser = SentenceSplitter(chunk_size=1024, chunk_overlap=20)
-            # nodes = node_parser.get_nodes_from_documents(
-            #     documents, show_progress=False
-            # )
             nodes = process_document(documents)
-            self.chroma_index.create_index(nodes=nodes)
-            
-            # Experiment 
-            query_engine = index.as_query_engine(llm=Gemini())
-            print(query_engine.query("What is Self Attention ?").response)
-
+            index = self.chroma_index.create_index(nodes=nodes)           
         except:
             print("No new data found")
         

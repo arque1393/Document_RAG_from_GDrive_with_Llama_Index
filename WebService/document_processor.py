@@ -23,3 +23,7 @@ def process_document(documents:list[Document]):
         show_progress=True,
     )
     return nodes
+
+
+def process_metadata(metadata:dict):
+    pass

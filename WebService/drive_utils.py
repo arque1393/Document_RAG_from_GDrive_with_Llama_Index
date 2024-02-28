@@ -28,13 +28,13 @@ if os.path.exists("../Google_Credentials/token.json"):
     credentials = Credentials.from_authorized_user_file("../Google_Credentials/token.json", DRIVE_API_SCOPES)
 # If there are no (valid) credentials available, let the user log in.
 if not credentials or not credentials.valid:
-    if credentials and credentials.expired and credentials.refresh_token:
-        credentials.refresh(Request())
-    else:
-        flow = InstalledAppFlow.from_client_secrets_file(
-            GOOGLE_CLIENT_SECRET,
-            DRIVE_API_SCOPES
-        )
+    # if credentials and credentials.expired and credentials.refresh_token:
+    #     credentials.refresh(Request())
+    # else:
+    flow = InstalledAppFlow.from_client_secrets_file(
+        GOOGLE_CLIENT_SECRET,
+        DRIVE_API_SCOPES
+    )
     credentials = flow.run_local_server(port=0)
     # Save the credentials for the next run
     with open("../Google_Credentials/token.json", "w") as token:
@@ -51,6 +51,7 @@ def extract_file_ids(target_list:list[Any]):
 
 
 reader_activity_list:list[str] = ['create','edit','rename']
+remove_activity:str = 'delete'
 
 
 
@@ -61,21 +62,38 @@ def watch_drive_load_data(folder_id : str, callbacks : callable ):
         current_time = datetime.datetime.now()
         current_time_formate=current_time.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")+'+00:00'
         previous_time_formate=previous_time.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")+'+00:00'
-        results = service.activity().query(body={
+        
+        try:
+            results = service.activity().query(body={
             "filter":f'time > "{previous_time_formate}" AND time < "{current_time_formate}"',
             'ancestorName':f"items/{folder_id}",
             "pageSize": 2}).execute()
-        
+        except Exception as e:
+            print("Error :", e)
+            print("Retrying.....")
+            time.sleep(5)
+            continue 
+            
         activities = results.get('activities', [])
+        deleted_file_list=[]
         file_list:list[str] = []
         for activity in activities:
             if iter(activity['primaryActionDetail']).__next__() in reader_activity_list :
                 file_list+=extract_file_ids(activity['targets'])
+            if iter(activity['primaryActionDetail']).__next__() == remove_activity :
+                deleted_file_list+=extract_file_ids(activity['targets'])
+        for item in file_list :
+            if item in deleted_file_list:
+                file_list.remove(item)
         
-        
+        file_list=list(set(file_list))
         print(file_list)
         # print("documents lodes : ", callbacks(file_list))
-        
+        if file_list:
+            try:
+                callbacks(file_list)
+            except Exception as e:
+                print(e)
         previous_time = current_time
         time.sleep(MONITORING_TIME_DELAY)
         
