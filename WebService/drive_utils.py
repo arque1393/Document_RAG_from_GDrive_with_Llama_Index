@@ -72,6 +72,8 @@ def watch_drive_load_data(folder_id : str, callbacks : callable ):
             print("Error :", e)
             print("Retrying.....")
             time.sleep(5)
+            previous_time = current_time
+            # exit()
             continue 
             
         activities = results.get('activities', [])
