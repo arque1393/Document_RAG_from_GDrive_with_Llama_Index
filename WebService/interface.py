@@ -1,42 +1,32 @@
 import gradio as gr
 import pandas as pd
 
-# Function to generate answer
-def generate_answer(question):
-    # Example data, replace with your own logic to generate answer
-    answer_text = f"The answer to your question '{question}' is..."
-    answer_table = np.array([['sss','sdghh'],['sdgfsdgh','asfgASG']])
-    return answer_text, answer_table
 
-# Interface setup
-question_input = gr.Textbox(label="Enter your question here")
-output_text = gr.Textbox(label="Answer (Text)")
-# output_table = gr.Table(label="Answer (Table)")
-output_table = gr.Table(label="Answer (Table)", type="numpy")
-
-# Interface creation
-interface = gr.Interface(
-    fn=generate_answer,
-    inputs=question_input,
-    outputs=[output_text,output_table],
-    title="Question-Answer Interface",
-    description="Enter your question and get answers in both text and table format."
-)
-
-# Launch the interface
-interface.launch()
+class WebInterface():
+    ''' This class simulate a Web interface based on Gradio Python library 
+    '''
+    def __init__(self, output_func:callable) -> None:
+        self.question_input = gr.Textbox(label="Enter your query")
+        self.output_text = gr.Textbox(label="Answer")
+        self.output_text_metadata = gr.Textbox(label="Resource")
+        
+        self.interface = gr.Interface(
+            fn=output_func,
+            inputs=self.question_input,
+            outputs=[self.output_text,self.output_text_metadata],
+            title="Question-Answer Interface",
+            description="Enter your question and get answers in both text and table format."
+        )
+    def start(self):
+        self.interface.launch()
 
 
 
 
+if __name__ == ' __main__':
 
-
-
-
-
-
-
-
+    i = WebInterface(lambda x:(x,x))
+    i.start()
 
 
 
