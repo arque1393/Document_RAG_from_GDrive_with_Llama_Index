@@ -12,7 +12,16 @@ VECTOR_STORE_PATH = BASE_DIR/'ChromaDB'
 
 EMBED_MODEL =  HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 # DRIVE_FOLDER_ID = os.environ['GOOGLE_DRIVE_FOLDER_ID'];
-DRIVE_FOLDER_ID = '1sLmLETXRAUA1NAoJDf6TxnJ21SJiXzQ3'
+DRIVE_FOLDER_ID = '1BRcz_62vvGcRG0EYjrqh3kVyF6QOmMnf'
+
 DRIVE_API_SCOPES = ["https://www.googleapis.com/auth/drive.activity.readonly"]
 
 MONITORING_TIME_DELAY  = 10 
+
+GOOGLE_GEMINI_API_KEY = os.environ['GOOGLE_API_KEY']
+MIME_TYPES = ['text/plain','application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              'application/pdf','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+              'text/csv','text/tab-separated-values','application/vnd.openxmlformats-officedocument.presentationml.presentation',
+              'application/vnd.google-apps.script+json'
+              
+              ]

@@ -4,7 +4,8 @@ from llama_index.llms.gemini import Gemini
 
 from vector_store import ChromaVectorStoreIndex
 from document_processor import process_document
-from constants import VECTOR_STORE_PATH ,GOOGLE_CREDENTIALS_PATH
+from constants import (VECTOR_STORE_PATH ,
+        GOOGLE_CREDENTIALS_PATH,MIME_TYPES,GOOGLE_GEMINI_API_KEY)
 from llama_index.readers.google import GoogleDriveReader
 from drive_utils import watch_drive_load_data
 import gradio as gr
@@ -31,8 +32,8 @@ class RAG_Drive_retriever():
             documents = self.load_data(list_file_ids)    
             nodes = process_document(documents)
             index = self.chroma_index.create_index(nodes=nodes)           
-        except:
-            print("No new data found")
+        except Exception as e:
+            print(e)
         
         
 if __name__ == '__main__':
@@ -42,7 +43,7 @@ if __name__ == '__main__':
         chroma_index = ChromaVectorStoreIndex(persist_dir=VECTOR_STORE_PATH, collection='Set1')
         print("\n\**********\n************\n*************\n\n")
         index = chroma_index.load_index()
-        query_engine = index.as_query_engine(llm=Gemini())
+        query_engine = index.as_query_engine(llm=Gemini(api_key=GOOGLE_GEMINI_API_KEY))
         print(query)        
         response = query_engine.query(query)
         print(response.response, response.metadata, 'ff')

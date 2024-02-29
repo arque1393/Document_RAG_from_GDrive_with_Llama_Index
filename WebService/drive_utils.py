@@ -47,7 +47,8 @@ from constants import DRIVE_FOLDER_ID
 
 
 def extract_file_ids(target_list:list[Any]):
-    return [target['driveItem']['name'][6:] for target in target_list]
+    return [target['driveItem']['name'][6:] for target in target_list 
+            if target['driveItem']['mimeType'] != 'application/vnd.google-apps.folder']
 
 
 reader_activity_list:list[str] = ['create','edit','rename']
@@ -72,7 +73,7 @@ def watch_drive_load_data(folder_id : str, callbacks : callable ):
             print("Error :", e)
             print("Retrying.....")
             time.sleep(5)
-            previous_time = current_time
+            # previous_time = current_time
             # exit()
             continue 
             
