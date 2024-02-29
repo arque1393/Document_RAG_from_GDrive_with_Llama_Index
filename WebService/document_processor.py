@@ -29,13 +29,12 @@ def process_document(documents:list[Document]):
 
 
 def process_metadata(metadata:dict):
-
     extractor_list = ['author','file name','created at', 'modified at', 'page_label', 'document_title' ] 
-    
-    extracted_metadata={}
+    extracted_metadata=''
+    metadata=iter(metadata.values()).__next__()
     for key in extractor_list :
-        try: extracted_metadata[key] = metadata[key]
-        except: extracted_metadata[key] = 'Not Applicable'
+        try: 
+            extracted_metadata = extracted_metadata + key + " :: " + metadata[key]+'\n'
+        except: 
+            continue
     return extracted_metadata
-        
-

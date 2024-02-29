@@ -3,9 +3,9 @@ from llama_index.core.node_parser import SentenceSplitter
 from llama_index.llms.gemini import Gemini
 
 from vector_store import ChromaVectorStoreIndex
-from document_processor import process_document
+from document_processor import process_document, process_metadata
 from constants import (VECTOR_STORE_PATH ,
-        GOOGLE_CREDENTIALS_PATH,MIME_TYPES,GOOGLE_GEMINI_API_KEY)
+        GOOGLE_CREDENTIALS_PATH,GOOGLE_GEMINI_API_KEY)
 from llama_index.readers.google import GoogleDriveReader
 from drive_utils import watch_drive_load_data
 import gradio as gr
@@ -13,6 +13,9 @@ from custome_prompts import custom_prompt_template
 # from interface import WebInterface
 import threading
 import time 
+
+
+
 class RAG_Drive_retriever():
     def __init__(self, vector_store_index:ChromaVectorStoreIndex) -> None:
         self.drive_loader = GoogleDriveReader(credentials_path=GOOGLE_CREDENTIALS_PATH,
@@ -46,8 +49,7 @@ if __name__ == '__main__':
         query_engine.update_prompts({"response_synthesizer:text_qa_template": custom_prompt_template}
 )
         response = query_engine.query(query)
-        print(response.response, response.metadata, 'ff')
-        return (response.response, response.metadata)
+        return (response.response, process_metadata(response.metadata))
     
     question_input = gr.Textbox(label="Enter your query")
     output_text = gr.Textbox(label="Answer")
@@ -62,13 +64,16 @@ if __name__ == '__main__':
 
     def drive_watcher_thread ():
         watch_drive_load_data(DRIVE_FOLDER_ID, drive_retriever.store_data)
-        
+
 
     
     
     def web_interface_thread ():
         # interface = WebInterface(web_interface_output)
-        time.sleep(10)
+        # while True :
+        #     if flag_to_control_web_thread:
+        #         break
+        time.sleep(30)
         interface.launch()   
         
         

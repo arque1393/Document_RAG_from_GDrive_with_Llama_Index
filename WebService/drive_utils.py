@@ -70,7 +70,7 @@ def watch_drive_load_data(folder_id : str, callbacks : callable ):
             'ancestorName':f"items/{folder_id}",
             "pageSize": 2}).execute()
         except Exception as e:
-            print("Error :", e)
+            print("Error on fetching information of drive :", e)
             print("Retrying.....")
             time.sleep(5)
             # previous_time = current_time
