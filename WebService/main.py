@@ -9,7 +9,7 @@ from constants import (VECTOR_STORE_PATH ,
 from llama_index.readers.google import GoogleDriveReader
 from drive_utils import watch_drive_load_data
 import gradio as gr
-
+from custome_prompts import custom_prompt_template
 # from interface import WebInterface
 import threading
 import time 
@@ -41,10 +41,10 @@ if __name__ == '__main__':
     drive_retriever = RAG_Drive_retriever(chroma_index)
     def web_interface_output(query:str):
         chroma_index = ChromaVectorStoreIndex(persist_dir=VECTOR_STORE_PATH, collection='Set1')
-        print("\n\**********\n************\n*************\n\n")
         index = chroma_index.load_index()
         query_engine = index.as_query_engine(llm=Gemini(api_key=GOOGLE_GEMINI_API_KEY))
-        print(query)        
+        query_engine.update_prompts({"response_synthesizer:text_qa_template": custom_prompt_template}
+)
         response = query_engine.query(query)
         print(response.response, response.metadata, 'ff')
         return (response.response, response.metadata)
