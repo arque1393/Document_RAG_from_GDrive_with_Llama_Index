@@ -25,8 +25,9 @@ google-auth-oauthlib
 
 
 chromadb
+fastapi
 llama-index-vector-stores-chroma
 sentence-transformers
-
+gradio
 docx2txt
 pypdf

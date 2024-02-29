@@ -10,3 +10,4 @@ Google_Credentials/
 ChromaDB/
 token.json
 llama_index_drive_loader/
+.env

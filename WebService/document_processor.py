@@ -7,7 +7,9 @@ from llama_index.core import Document
 import nest_asyncio
 from llama_index.llms.gemini import Gemini 
 from llama_index.core.ingestion import IngestionPipeline
-GOOGLE_GEMINI_API_KEY = 'AIzaSyCyHIeutwgqev35okEgy6b913Zmfq3RqnA'
+
+from constants import GOOGLE_GEMINI_API_KEY
+
 nest_asyncio.apply()
 
 def process_document(documents:list[Document]):
@@ -27,6 +29,7 @@ def process_document(documents:list[Document]):
 
 
 def process_metadata(metadata:dict):
+
     extractor_list = ['author','file name','created at', 'modified at', 'page_label', 'document_title' ] 
     
     extracted_metadata={}
@@ -36,12 +39,3 @@ def process_metadata(metadata:dict):
     return extracted_metadata
         
 
-# if __name__ == '__main__':
-#     from llama_index.readers.google import GoogleDriveReader
-    
-#     drive_loader = GoogleDriveReader(credentials_path='../Google_Credentials/PROJECT_ID.json',
-#                 token_path='llama_index_drive_loader/token.json',
-#                 pydrive_creds_path='llama_index_drive_loader/creds.txt')
-#     docs = drive_loader.load_data(file_ids=['1ZUiPV7C-ey2NT3hotbXtj1BfVW-5DPKY'])
-#     print(len(docs))
-    
