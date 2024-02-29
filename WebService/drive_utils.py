@@ -90,13 +90,16 @@ def watch_drive_load_data(folder_id : str, callbacks : callable ):
                 file_list.remove(item)
         
         file_list=list(set(file_list))
-        print(file_list)
+        print('reading new files : ',file_list)
         # print("documents lodes : ", callbacks(file_list))
         if file_list:
             try:
                 callbacks(file_list)
+                print('Reading Successful.')
             except Exception as e:
+                print("Error Occurs while Reading")
                 print(e)
+        
         previous_time = current_time
         time.sleep(MONITORING_TIME_DELAY)
         
