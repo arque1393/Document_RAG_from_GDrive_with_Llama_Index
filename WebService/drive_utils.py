@@ -94,7 +94,7 @@ def watch_drive_load_data(folder_id : str, callbacks : callable ):
         # print("documents lodes : ", callbacks(file_list))
         if file_list:
             try:
-                callbacks(file_list)
+                callbacks(file_list,folder_id)
                 print('Reading Successful.')
             except Exception as e:
                 print("Error Occurs while Reading")

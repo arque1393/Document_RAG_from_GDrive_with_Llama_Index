@@ -13,7 +13,7 @@ VECTOR_STORE_PATH = BASE_DIR/'ChromaDB'
 EMBED_MODEL =  HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 # DRIVE_FOLDER_ID = os.environ['GOOGLE_DRIVE_FOLDER_ID'];
 # DRIVE_FOLDER_ID = '1BRcz_62vvGcRG0EYjrqh3kVyF6QOmMnf'
-DRIVE_FOLDER_ID = '11AL-KYS70DaDqAqAMVFTeFH-GTCE9f44'
+DRIVE_FOLDER_ID = ['11AL-KYS70DaDqAqAMVFTeFH-GTCE9f44','1wPj9Pf0n4i7HP_KqqP_sVESL7KNpE7h1']
 
 DRIVE_API_SCOPES = ["https://www.googleapis.com/auth/drive.activity.readonly"]
 
