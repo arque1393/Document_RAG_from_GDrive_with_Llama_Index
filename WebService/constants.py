@@ -25,3 +25,6 @@ GOOGLE_GEMINI_API_KEY = os.environ['GOOGLE_API_KEY']
 #                 'text/csv','text/tab-separated-values','application/vnd.openxmlformats-officedocument.presentationml.presentation',
 #                 'application/vnd.google-apps.script+json'
 #             ]
+
+
+PARAGRAPH_SPLITTER_EXPRESSION = r'[\n][\s]*[\n][\n\s]*'
