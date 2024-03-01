@@ -1,5 +1,5 @@
 
-# **Title** : : Intelligent Document Finder with Llama Index 
+# **Title** :: Intelligent Document Finder with Llama Index 
 
 ## Project Information and Overview 
 
@@ -12,11 +12,11 @@
 1. Automatic Retrieve data from Google Drive folders.
     - System Check in certain time interval if changes occurs on selected Google Drive if occurs then it decode that and read newly created or updated files from the Google Drive and **store** all the data in a vector database for future search 
     - As Vector Database ```ChromaDB``` has been used 
-2. Retrieve any text based document files 
-    - System is able to retrieve any kind of text information files Ex. Documents, PDF, PPD, HTML, Markdown etc.
+2. Retrieve any text-based document files 
+    - System is able to retrieve any kind of text information files Ex. Documents, PDF, PPT, HTML, Markdown, etc.
     - Using ```llama_index.readers.google.GoogleDriveReader``` to load all document from the selected Google Drive folder 
 3. Preprocessing and Vector Store Indexing :
-    - Index all the retrieve data by making few pre process like Title Extraction , Paragraph Extraction, etc. 
+    - Index all the retrieved data by making few pre-processes like Title Extraction, Paragraph Extraction, etc. 
 4.  Google's Gemini Model as LLM to answer the Query 
 
 ### Process 
@@ -32,40 +32,45 @@
 7. Implement a frontend with Gradio 
 
 ### Flow Char Diagram 
-![Select or Create Projectimages/](images/flow_chart.png)
+![flow_chart](https://github.com/arque1393/Document_RAG_from_GDrive_with_Llama_Index/assets/79799118/87f23a83-8b41-45bc-b3a3-7651af98268b)
+
 
 
 ### Module Information 
 - [constants.py]()
     - Contains all Global Constant elements 
-    - Any modification can be done by change this file attribute 
+    - Any modification can be done by changing this file attribute 
 - [document_processor.py]()
-    - contains function that process a documents to convert small chunks Node with applying few metadata extractor.
-    - contains a function that work on metadata and extract required metadata 
+    - contains a function that processes documents to convert small chunks of Node by applying a few metadata extractors.
+    - contains a function that works on metadata and extracts required metadata 
 - [drive_utils.py]()
-    - contains function that watch drive in certain time interval and using callbacks automatically process and index the documents. 
+    - contains the function that watches a drive in certain time intervals and using callbacks automatically processes and indexes the documents. 
 - [vector_store.py]()
-    - Contains a class ChromaVectorStoreIndex that helps to indexing documents using ChromaDB 
+    - Contains a class ChromaVectorStoreIndex that helps to index documents using ChromaDB 
 - [main.py]()
-    - Main Module runs in two different independent threads 
-        1. Monitor Google drive to check if any changes happens or not. Update Vector Store Database id updated. 
-        2. Run The Gradio interface along with run query search on Vector Store 
+    - The main Module runs in two different independent threads 
+        1. Monitor Google Drive to check if any changes happen or not. Update Vector Store Database is updated. 
+        2. Run The Gradio interface along with running a query search on the Vector Store 
 
 ## How to **RUN**
 ### Step 1 : Active Google Drive API and Setup Google Credentials 
 1. Goto to the [Google Cloud console](https://console.cloud.google.com/welcome/new?pli=1)
-![Select or Create Projectimages/](images/image.png)
-2. Select or Create a project 
+![image](https://github.com/arque1393/Document_RAG_from_GDrive_with_Llama_Index/assets/79799118/e59f1f71-9f18-41fa-bbd3-0082908e2f03)
+2. Select or Create a project   
+![image-1](https://github.com/arque1393/Document_RAG_from_GDrive_with_Llama_Index/assets/79799118/b306a9b4-d2b7-462a-8d4e-00f5cfa7c978)
 3. Navigate to API and Services and click on Enable API and services 
-![alt text](images/image-2.png)
+![image-2](https://github.com/arque1393/Document_RAG_from_GDrive_with_Llama_Index/assets/79799118/a326627f-503a-40c3-9958-00df56441745)
 4. Search for Google Drive and enable `Google Drive API` and 'Google Drive Activity API' and enable both 
-![alt text](images/image-3.png)
+![image-3](https://github.com/arque1393/Document_RAG_from_GDrive_with_Llama_Index/assets/79799118/7d51fc5b-6b43-4c3c-a83c-20bf5e707cc3)
 5. Now Go back to API and Services pages as shown in 3 and Navigate to the **Credentials**
-![alt text](images/image-4.png)
+![image-4](https://github.com/arque1393/Document_RAG_from_GDrive_with_Llama_Index/assets/79799118/ff31ceba-eddd-4f07-9a2e-8c6e881fe620)
+
 6. Create an API Key, OAuth Client , and Service Account. Download the OAuth Client 'Client_Secret.json'
-![alt text](images/image-5.png)
+![image-5](https://github.com/arque1393/Document_RAG_from_GDrive_with_Llama_Index/assets/79799118/e8bed4fc-be7f-455f-a59c-8757fb4ff25b)
+
 7. Go to Service Account and create key and Download the key 
-![alt text](images/image-6.png)
+![image-6](https://github.com/arque1393/Document_RAG_from_GDrive_with_Llama_Index/assets/79799118/2c5f0fa3-43de-4cd6-a396-df853c1ee885)
+
 8. Place the key content and Client Secret on the example Google_Credentials folder 
 ### Step 2: Set API Key in .env file 
 - follow this site to create easy API key https://aistudio.google.com/app/apikey
@@ -88,4 +93,9 @@ python main.py
 - Llama Index's GoogleDriveReader is not able to read All types of PDF files 
 
 
+
+## Final Output Shot 
+File name : Chintan Shah- Profile Gain.pdf
+Output Screen shot :
+![Working Demo](https://github.com/arque1393/Document_RAG_from_GDrive_with_Llama_Index/assets/79799118/8cf752df-3b5d-4710-b2d7-34331849d6ba)
 
