@@ -3,6 +3,11 @@
 
 ## Project Information and Overview 
 
+### Demonstration Video Link 
+1. Main Video Link https://1drv.ms/u/s!Aj2Nbw_0FL8HibtIga-xfVH0gXEB9g?e=yNsozX
+2. Important Additional Information Video  https://1drv.ms/u/s!Aj2Nbw_0FL8HibtHaAfhj89bXEq0xA?e=lfcmJ8
+
+
 ### Features : 
 1. Automatic Retrieve data from Google Drive folders.
     - System Check in certain time interval if changes occurs on selected Google Drive if occurs then it decode that and read newly created or updated files from the Google Drive and **store** all the data in a vector database for future search 
@@ -26,6 +31,10 @@
 6. Integrate Gemini to retrieve data 
 7. Implement a frontend with Gradio 
 
+### Flow Char Diagram 
+![Select or Create Projectimages/](images/flow_chart.png)
+
+
 ### Module Information 
 - [constants.py]()
     - Contains all Global Constant elements 
@@ -45,18 +54,18 @@
 ## How to **RUN**
 ### Step 1 : Active Google Drive API and Setup Google Credentials 
 1. Goto to the [Google Cloud console](https://console.cloud.google.com/welcome/new?pli=1)
-![Select or Create Project](image.png)
+![Select or Create Projectimages/](images/image.png)
 2. Select or Create a project 
 3. Navigate to API and Services and click on Enable API and services 
-![alt text](image-2.png)
+![alt text](images/image-2.png)
 4. Search for Google Drive and enable `Google Drive API` and 'Google Drive Activity API' and enable both 
-![alt text](image-3.png)
+![alt text](images/image-3.png)
 5. Now Go back to API and Services pages as shown in 3 and Navigate to the **Credentials**
-![alt text](image-4.png)
+![alt text](images/image-4.png)
 6. Create an API Key, OAuth Client , and Service Account. Download the OAuth Client 'Client_Secret.json'
-![alt text](image-5.png)
+![alt text](images/image-5.png)
 7. Go to Service Account and create key and Download the key 
-![alt text](image-6.png)
+![alt text](images/image-6.png)
 8. Place the key content and Client Secret on the example Google_Credentials folder 
 ### Step 2: Set API Key in .env file 
 - follow this site to create easy API key https://aistudio.google.com/app/apikey
@@ -76,4 +85,7 @@ python main.py
 
 
 ## Limitations 
-- 
+- Llama Index's GoogleDriveReader is not able to read All types of PDF files 
+
+
+
