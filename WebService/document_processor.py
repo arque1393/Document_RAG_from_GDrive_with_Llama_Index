@@ -44,11 +44,9 @@ def process_document(documents:list[Document]):
 
 
 def process_metadata(metadata:dict):
-    """After getting response from the VectorStoreInddex class, it extract required Metadata to display 
-    
+    """After getting response from the VectorStoreInddex class, it extract required Metadata to display     
     Args:
-        metadata (dict): This should be the total metadata dictionary that Index object return as response 
-        
+        metadata (dict): This should be the total metadata dictionary that Index object return as response         
     Returns:
         _type_: Required Metadata 
     """

@@ -1,8 +1,9 @@
+# Basic Module 
 import os.path
 import datetime 
 import time 
 
-# For maintaining Drive Events 
+# For OAuth and maintaining Drive Events 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -10,17 +11,10 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 
-# for Retrieving data from Google Drive using Llamaindex 
-from constants import ( 
-        DRIVE_API_SCOPES, GOOGLE_CLIENT_SECRET,
-        MONITORING_TIME_DELAY)
+# for Retrieving data from Google Drive using Llama index 
+from constants import ( DRIVE_API_SCOPES,
+        MONITORING_TIME_DELAY, GOOGLE_CLIENT_SECRET)
 from typing import Any
-
-
-
-
-
-### Define function to check Drive Updates 
 
 ## Define Credential to Google Drive 
 credentials:Any = None
@@ -45,7 +39,7 @@ print("Service is made ")
 from constants import DRIVE_FOLDER_ID
 
 
-
+# Helper Function to extract file IDs 
 def extract_file_ids(target_list:list[Any]):
     return [target['driveItem']['name'][6:] for target in target_list 
             if target['driveItem']['mimeType'] != 'application/vnd.google-apps.folder']
@@ -56,8 +50,15 @@ remove_activity:str = 'delete'
 
 
 
-
+### Define function to check Drive Updates
 def watch_drive_load_data(folder_id : str, callbacks : callable ):
+    """Watch Drive check if any changes happens or not.
+    If New File Uploaded or created or edited it extract the file ID and using callbacks store in to VectorStoreIndex
+
+    Args:
+        folder_id (str): The id of that specific folder of google drive Where to search changes 
+        callbacks (callable): the function that store the file content in Vector Database
+    """
     previous_time = datetime.datetime.now() - datetime.timedelta(days=365)    
     while True:
         current_time = datetime.datetime.now()
@@ -90,9 +91,9 @@ def watch_drive_load_data(folder_id : str, callbacks : callable ):
                 file_list.remove(item)
         
         file_list=list(set(file_list))
-        print('reading new files : ',file_list)
         # print("documents lodes : ", callbacks(file_list))
         if file_list:
+            print('reading new files : ',file_list)
             try:
                 callbacks(file_list)
                 print('Reading Successful.')

@@ -46,8 +46,7 @@ if __name__ == '__main__':
         chroma_index = ChromaVectorStoreIndex(persist_dir=VECTOR_STORE_PATH, collection='Set1')
         index = chroma_index.load_index()
         query_engine = index.as_query_engine(llm=Gemini(api_key=GOOGLE_GEMINI_API_KEY))
-        query_engine.update_prompts({"response_synthesizer:text_qa_template": custom_prompt_template}
-)
+        query_engine.update_prompts({"response_synthesizer:text_qa_template": custom_prompt_template})
         response = query_engine.query(query)
         return (response.response, process_metadata(response.metadata))
     
@@ -64,15 +63,8 @@ if __name__ == '__main__':
 
     def drive_watcher_thread ():
         watch_drive_load_data(DRIVE_FOLDER_ID, drive_retriever.store_data)
-
-
-    
-    
+        
     def web_interface_thread ():
-        # interface = WebInterface(web_interface_output)
-        # while True :
-        #     if flag_to_control_web_thread:
-        #         break
         time.sleep(30)
         interface.launch()   
         
@@ -81,17 +73,5 @@ if __name__ == '__main__':
     thread2 = threading.Thread(target=web_interface_thread)    
     thread1.start()
     thread2.start()
-    
-    
-
-thread1.join()
-thread2.join()
-    # while True :
-    #     print("server is running")
-    #     query = input('Ask your Query : ')
-    #     print(query_engine.query(query))
-    #     # time.sleep(100)
 
 
-
-    

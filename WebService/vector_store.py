@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 class ChromaVectorStoreIndex(object):
-    '''This class is a simple control tool for ChromaDB 
+    '''This class is a simple control tool for Vector Store Index using ChromaDB 
     '''
     
     def __init__(self,persist_dir : Union[Path,str], 
