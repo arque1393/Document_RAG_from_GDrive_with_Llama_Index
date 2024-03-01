@@ -100,7 +100,8 @@ def watch_drive_load_data(folder_id : str, callbacks : callable ):
             except Exception as e:
                 print("Error Occurs while Reading")
                 print(e)
-        
+            finally:
+                print("Server is waiting for next update in google drive ")
         previous_time = current_time
         time.sleep(MONITORING_TIME_DELAY)
         

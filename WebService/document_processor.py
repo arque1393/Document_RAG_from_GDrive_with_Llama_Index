@@ -55,7 +55,7 @@ def process_metadata(metadata:dict):
     metadata=iter(metadata.values()).__next__()
     for key in extractor_list :
         try: 
-            extracted_metadata = extracted_metadata + key + f" ::  + {metadata[key]}"+'\n'
+            extracted_metadata = extracted_metadata + key + f" :  {metadata[key]}"+'\n'
         except: 
             continue
     return extracted_metadata
