@@ -32,3 +32,7 @@ class UserCreate(BaseModel):
 class Collection(BaseModel):
     collection_id:str
     user_id:int
+    
+class DriveFolderInfo(BaseModel):
+    folder_link : str
+    

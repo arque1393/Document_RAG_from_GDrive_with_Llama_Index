@@ -107,3 +107,57 @@ def watch_drive_load_data(folder_id : str, callbacks : callable ):
         
 
 
+def drive_link_to_id (folder_link:str)->str:
+    
+    front = 'https://drive.google.com/drive/folders/'
+    end = '?usp=sharing'
+    return folder_link.strip(end).strip(front)
+
+def folder_id_to_name(folder_id):
+    pass 
+def read_drive_folder(folder_id):
+    while True:
+        current_time = datetime.datetime.now()
+        current_time_formate=current_time.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")+'+00:00'
+        previous_time_formate=previous_time.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")+'+00:00'
+        
+        try:
+            results = service.activity().query(body={
+            "filter":f'time > "{previous_time_formate}" AND time < "{current_time_formate}"',
+            'ancestorName':f"items/{folder_id}",
+            "pageSize": 2}).execute()
+        except Exception as e:
+            print("Error on fetching information of drive :", e)
+            print("Retrying.....")
+            time.sleep(5)
+            # previous_time = current_time
+            # exit()
+            continue 
+            
+        activities = results.get('activities', [])
+        deleted_file_list=[]
+        file_list:list[str] = []
+        for activity in activities:
+            if iter(activity['primaryActionDetail']).__next__() in reader_activity_list :
+                file_list+=extract_file_ids(activity['targets'])
+            if iter(activity['primaryActionDetail']).__next__() == remove_activity :
+                deleted_file_list+=extract_file_ids(activity['targets'])
+        for item in file_list :
+            if item in deleted_file_list:
+                file_list.remove(item)
+        
+        file_list=list(set(file_list))
+        # print("documents lodes : ", callbacks(file_list))
+        if file_list:
+            print('reading new files : ',file_list)
+            try:
+                callbacks(file_list,folder_id)
+                print('Reading Successful.')
+            except Exception as e:
+                print("Error Occurs while Reading")
+                print(e)
+            finally:
+                print("Server is waiting for next update in google drive ")
+        previous_time = current_time
+        time.sleep(MONITORING_TIME_DELAY) 
+        break 

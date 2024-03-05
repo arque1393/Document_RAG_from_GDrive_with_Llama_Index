@@ -4,30 +4,26 @@ from fastapi.security import OAuth2PasswordRequestForm
 from constants import (JWT_AUTH_SECRET_KEY , ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES)
 from datetime import  timedelta
 from typing import Annotated
-from models import User,UserCreate,Token,Collection 
+from models import User,UserCreate,Token,Collection,DriveFolderInfo
 from db import models 
 from auth_utils import (is_email_or_username_taken,get_password_hash,
                         authenticate_user,create_access_token,
                         get_current_active_user)
 from db.setup import get_session,engine
 from sqlalchemy.orm import Session
+from drive_utils import drive_link_to_id, folder_id_to_name, read_drive_folder
 models.Base.metadata.create_all(engine)
 app = FastAPI()
 
 @app.post("/user")
-async def create(user:UserCreate, session:Session = Depends(get_session)):
-    print("user object entry user ")
-    print(session)
-    
+async def create(user:UserCreate, session:Session = Depends(get_session)):    
     if validate_entity := is_email_or_username_taken(user.email,user.username, models.User,session):
         raise HTTPException(status_code=400, detail=f'{validate_entity} is already taken')    
     new_user = models.User(email = user.email,username=user.username,
                         full_name= user.full_name, 
-                        _password_hash = get_password_hash(user.password) )
-    print("user object created")
+                        _password_hash = get_password_hash(user.password) )  
     session.add(new_user)
     session.commit()
-    print("user object commited ")
     session.refresh(new_user)
     return new_user
 
@@ -53,3 +49,17 @@ async def login_for_access_token(
 async def read_users_me(
     current_user: Annotated[User, Depends(get_current_active_user)]):
     return current_user
+
+
+@app.post("/user/collections")
+async def add_collection(current_user: Annotated[User, Depends(get_current_active_user)],
+                        folder_info:DriveFolderInfo, session: Session = Depends(get_session)):
+    if collection := session.query(models.Collection).filter_by(collection_id =  drive_link_to_id(folder_info.folder_link)).first()
+        raise HTTPException(status_code=400, detail='Collection is exist is already taken')  
+    session.add(collection)
+    session.commit()
+    session.refresh(collection)
+    collection_name = folder_id_to_name(drive_link_to_id(folder_info.folder_link))
+    read_drive_folder(collection_name)
+@app.get("/user/collections")
+async def add_collection(current_user: Annotated[User, Depends(get_current_active_user)], query:Collection):
