@@ -31,3 +31,13 @@ sentence-transformers
 gradio
 docx2txt
 pypdf
+
+
+## Fast API and Related Modules 
+fastapi
+uvicorn 
+pydantic 
+python-jose[cryptography]
+passlib[bcrypt]
+sqlalchemy 
+psycopg2
