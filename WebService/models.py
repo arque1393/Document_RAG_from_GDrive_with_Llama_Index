@@ -10,9 +10,9 @@ class TokenData(BaseModel):
     username: str | None = None
 
 class User(BaseModel):
+    user_id:int
     username: str
     email: str
-    full_name: str
     disabled: bool
     _password_hash:str
     class Config:
@@ -25,7 +25,6 @@ class UserInDB(User):
 class UserCreate(BaseModel):
     username: str
     email: str 
-    full_name: str 
     disabled: bool 
     password:str
 

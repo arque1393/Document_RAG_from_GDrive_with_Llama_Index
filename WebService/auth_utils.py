@@ -10,7 +10,7 @@ from db.setup import get_session, Base
 from pydantic import EmailStr
 from db import models 
 from sqlalchemy.orm import Session
-
+from pathlib import Path 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -35,7 +35,6 @@ return str:
     existing_object = session.query(model).filter_by(username=username).first()
     if existing_object:
         return 'username'
-    
     return False
     
 ## Helper Functions 
@@ -97,3 +96,46 @@ async def get_current_active_user(
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
+
+
+
+def google_auth(username):
+    from typing import Any
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+    from google_auth_oauthlib.flow import InstalledAppFlow
+    from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
+    DRIVE_API_SCOPES =  ["https://www.googleapis.com/auth/drive.activity.readonly"]
+    GOOGLE_CLIENT_SECRET = r"C:\Users\Admin\AritraRanjanChowdhury\GEN_AI\Document_RAG_from_GDrive_with_Llama_Index\Google_Credentials\CLIENT_SECRET.json"
+    credentials:Any = None
+    token_path = Path(fr"../CredentialHub/{username}").resolve()
+    if not token_path.exists():
+        token_path.mkdir(parents=True)
+        
+    def create_token():
+        flow = InstalledAppFlow.from_client_secrets_file(
+            GOOGLE_CLIENT_SECRET,
+            DRIVE_API_SCOPES
+        )
+        credentials = flow.run_local_server(port=0)
+        with open(token_path/'token.json', "w") as token:
+            token.write(credentials.to_json())    
+
+        
+        return credentials
+    if (token_path/'token.json').exists():
+        credentials = Credentials.from_authorized_user_file(str(token_path/'token.json'), DRIVE_API_SCOPES)
+    # If there are no (valid) credentials available, let the user log in.
+    if not credentials or not credentials.valid:
+        if credentials and credentials.expired and credentials.refresh_token:
+            try:
+                credentials.refresh(Request())
+            except : 
+                credentials = create_token()
+        else:
+            credentials = create_token()
+    service = build("driveactivity", "v2", credentials=credentials)
+    return service
+
+        
