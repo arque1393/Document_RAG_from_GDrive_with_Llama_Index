@@ -35,3 +35,7 @@ class Collection(BaseModel):
 class DriveFolderInfo(BaseModel):
     folder_link : str
     
+    
+class Query (BaseModel):
+    collection_name:str
+    question:str

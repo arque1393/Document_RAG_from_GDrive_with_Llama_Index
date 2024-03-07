@@ -1,11 +1,10 @@
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-
-from constants import (JWT_AUTH_SECRET_KEY , ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES)
-from datetime import  timedelta,datetime
 from typing import Annotated
-from models import User,UserCreate,Token,Collection,DriveFolderInfo
 from db import models 
+from constants import  ACCESS_TOKEN_EXPIRE_MINUTES
+from datetime import  timedelta,datetime
+from models import User,UserCreate,Token,DriveFolderInfo,Query
 from auth_utils import (is_email_or_username_taken,get_password_hash,
                         authenticate_user,create_access_token,
                         get_current_active_user, google_auth)
@@ -13,7 +12,7 @@ from auth_utils import (is_email_or_username_taken,get_password_hash,
 from db.setup import get_session,engine
 from sqlalchemy.orm import Session
 from drive_utils import drive_link_to_folder_name_and_id,  read_drive_folder
-from callbacks import store_data_callback
+from callbacks import store_data_callback, get_answer
 models.Base.metadata.create_all(engine)
 app = FastAPI()
 
@@ -68,7 +67,7 @@ async def add_collection(current_user: Annotated[User, Depends(get_current_activ
     if collection :
         current_time = datetime.now()        
         try:
-            read_drive_folder(drive_activity_service, folder_id ,store_data_callback, collection.updated_at  )
+            read_drive_folder(drive_activity_service, folder_id ,store_data_callback(current_user.username,folder_name), collection.updated_at  )
         except Exception as e : 
             raise HTTPException(status_code=400, detail=f'error :: {e}')
         
@@ -86,7 +85,7 @@ async def add_collection(current_user: Annotated[User, Depends(get_current_activ
     session.commit()
     session.refresh(new_collection)
     try: 
-        read_drive_folder(drive_activity_service, folder_id ,store_data_callback)
+        read_drive_folder(drive_activity_service, folder_id ,store_data_callback(current_user.username,folder_name))
     except Exception as e : 
         raise HTTPException(status_code=500,detail=f'error :: {e}')
     
@@ -95,3 +94,10 @@ async def add_collection(current_user: Annotated[User, Depends(get_current_activ
 @app.get("/user/collections")
 async def get_collection(current_user: Annotated[User, Depends(get_current_active_user)], session: Session= Depends(get_session)):
     return session.query(models.Collection).filter_by(user_id = current_user.user_id).all() 
+
+
+
+@app.post("/user/query")
+async def question_and_answer(current_user: Annotated[User, Depends(get_current_active_user)], query:Query ):
+    answer,metadata = get_answer(current_user.username, query.collection_name, query.question)
+    return {'answer':answer, 'metadata':metadata} 

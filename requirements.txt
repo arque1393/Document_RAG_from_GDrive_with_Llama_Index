@@ -41,3 +41,6 @@ python-jose[cryptography]
 passlib[bcrypt]
 sqlalchemy 
 psycopg2
+
+
+streamlit 

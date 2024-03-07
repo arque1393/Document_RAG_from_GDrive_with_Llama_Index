@@ -15,7 +15,7 @@ from pathlib import Path
 from constants import ( DRIVE_API_SCOPES,
         MONITORING_TIME_DELAY, GOOGLE_CLIENT_SECRET)
 from typing import Any,Optional
-
+import re
 
 
 # # Define Credential to Google Drive 
@@ -41,14 +41,12 @@ from typing import Any,Optional
 # from constants import DRIVE_FOLDER_ID
 
 
-# # Helper Function to extract file IDs 
-# def extract_file_ids(target_list:list[Any]):
-#     return [target['driveItem']['name'][6:] for target in target_list 
-#             if target['driveItem']['mimeType'] != 'application/vnd.google-apps.folder']
+# Helper Function to extract file IDs 
+def extract_file_ids(target_list:list[Any]):
+    return [target['driveItem']['name'][6:] for target in target_list 
+            if target['driveItem']['mimeType'] != 'application/vnd.google-apps.folder']
 
 
-# reader_activity_list:list[str] = ['create','edit','rename']
-# remove_activity:str = 'delete'
 
 
 
@@ -110,20 +108,21 @@ from typing import Any,Optional
 
 
 def drive_link_to_folder_name_and_id ( service, folder_link:str)->str:
+    pattern = r'/folders/([\w-]+)'
+    match = re.search(pattern, folder_link)
     
-    front = 'https://drive.google.com/drive/folders/'
-    end = '?usp=sharing'
-    end2 = '?usp=drive_link'
-    folder_link= folder_link.strip(end)
-    folder_link= folder_link.strip(end2)
-    folder_link = folder_link.strip(front)
-    print(folder_link)
-
-    folder_info = service.files().get(fileId=folder_link, fields="name").execute()
-    return (str(folder_info['name']),folder_link)
+    if match:   
+        folder_id = match.group(1)
+    else : 
+        raise Exception("Regular Expression not match ")
+    folder_info = service.files().get(fileId=folder_id, fields="name").execute()
+    return (str(folder_info['name']),folder_id)
     # return folder_link
 
 def read_drive_folder(service,folder_id,callbacks, update_time:Optional[Any]=None):
+    reader_activity_list:list[str] = ['create','edit','rename']
+    remove_activity:str = 'delete'
+
     print(service,folder_id,update_time)
     if not update_time:
         update_time = datetime.datetime.now() - datetime.timedelta(days=365)
@@ -158,11 +157,11 @@ def read_drive_folder(service,folder_id,callbacks, update_time:Optional[Any]=Non
                 file_list.remove(item)
         
         file_list=list(set(file_list))
-        # print("documents lodes : ", callbacks(file_list))
+        print("documents lodes : ", file_list)
         if file_list:
             print('reading new files : ',file_list)
             try:
-                callbacks(file_list,folder_id)
+                callbacks(file_list)
                 print('Reading Successful.')
             except Exception as e:
                 print("Error Occurs while Reading")

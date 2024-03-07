@@ -50,6 +50,7 @@ def process_metadata(metadata:dict):
     Returns:
         _type_: Required Metadata 
     """
+    if not metadata: return "No Metadata found"
     extractor_list = ['author','file name', 'document_title', 'page_label','paragraph_no','created at', 'modified at'] 
     extracted_metadata=''
     metadata=iter(metadata.values()).__next__()
