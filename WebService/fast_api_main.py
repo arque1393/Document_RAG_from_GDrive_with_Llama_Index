@@ -101,3 +101,10 @@ async def get_collection(current_user: Annotated[User, Depends(get_current_activ
 async def question_and_answer(current_user: Annotated[User, Depends(get_current_active_user)], query:Query ):
     answer,metadata = get_answer(current_user.username, query.collection_name, query.question)
     return {'answer':answer, 'metadata':metadata} 
+
+@app.post("/user/disable")
+async def question_and_answer(current_user: Annotated[User, Depends(get_current_active_user)], session:Session=Depends(get_session) ):
+    current_user.disabled = True 
+    session.commit()
+    session.refresh(current_user)
+    
