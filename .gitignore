@@ -13,3 +13,4 @@ llama_index_drive_loader/
 .env
 *.ipynb
 *.db
+*token*
