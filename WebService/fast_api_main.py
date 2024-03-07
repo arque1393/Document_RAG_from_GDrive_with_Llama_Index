@@ -12,7 +12,7 @@ from auth_utils import (is_email_or_username_taken,get_password_hash,
 
 from db.setup import get_session,engine
 from sqlalchemy.orm import Session
-from drive_utils import drive_link_to_folder_name,  read_drive_folder
+from drive_utils import drive_link_to_folder_name_and_id,  read_drive_folder
 from callbacks import store_data_callback
 models.Base.metadata.create_all(engine)
 app = FastAPI()
@@ -56,18 +56,19 @@ async def read_users_me(
 async def add_collection(current_user: Annotated[User, Depends(get_current_active_user)],
                         folder_info:DriveFolderInfo, session: Session = Depends(get_session)):
     try : 
-        service  = google_auth(current_user.username)
+        drive_service,drive_activity_service  = google_auth(current_user.username)
     except :
         raise HTTPException(status_code=400, detail = "Service can not be build")
     print(folder_info.folder_link)
+    folder_name, folder_id =  drive_link_to_folder_name_and_id(drive_service,folder_info.folder_link)
     collection = session.query(models.Collection).filter(
-                models.Collection.collection_name ==  drive_link_to_folder_name(current_user.username,folder_info.folder_link) 
+                models.Collection.collection_name == folder_name
                 and models.Collection.user_id == current_user.user_id  
             ).first() 
     if collection :
         current_time = datetime.now()        
         try:
-            read_drive_folder(service, collection.collection_name,store_data_callback, collection.updated_at  )
+            read_drive_folder(drive_activity_service, folder_id ,store_data_callback, collection.updated_at  )
         except Exception as e : 
             raise HTTPException(status_code=400, detail=f'error :: {e}')
         
@@ -77,16 +78,15 @@ async def add_collection(current_user: Annotated[User, Depends(get_current_activ
         return {"message": "Collection Update successfully "}
     
     new_collection = models.Collection( 
-                collection_name =  drive_link_to_folder_name(current_user.username,folder_info.folder_link), 
+                collection_name =  folder_name,
                 user_id = current_user.user_id, created_at = datetime.now(), 
                 updated_at =  datetime.now() )  
     
     session.add(new_collection)
     session.commit()
     session.refresh(new_collection)
-    # collection_name = folder_id_to_name(drive_link_to_folder_name(folder_info.folder_link))
     try: 
-        read_drive_folder(service, new_collection.collection_name,store_data_callback)
+        read_drive_folder(drive_activity_service, folder_id ,store_data_callback)
     except Exception as e : 
         raise HTTPException(status_code=500,detail=f'error :: {e}')
     

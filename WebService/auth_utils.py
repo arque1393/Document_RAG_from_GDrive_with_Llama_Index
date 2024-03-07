@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
-from constants import  JWT_AUTH_SECRET_KEY , ALGORITHM
+from constants import  JWT_AUTH_SECRET_KEY , ALGORITHM, GOOGLE_CLIENT_SECRET, DRIVE_API_SCOPES
 from db.setup import get_session, Base
 from pydantic import EmailStr
 from db import models 
@@ -106,8 +106,6 @@ def google_auth(username):
     from google_auth_oauthlib.flow import InstalledAppFlow
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
-    DRIVE_API_SCOPES =  ["https://www.googleapis.com/auth/drive.activity.readonly"]
-    GOOGLE_CLIENT_SECRET = r"C:\Users\Admin\AritraRanjanChowdhury\GEN_AI\Document_RAG_from_GDrive_with_Llama_Index\Google_Credentials\CLIENT_SECRET.json"
     credentials:Any = None
     token_path = Path(fr"../CredentialHub/{username}").resolve()
     if not token_path.exists():
@@ -120,13 +118,11 @@ def google_auth(username):
         )
         credentials = flow.run_local_server(port=0)
         with open(token_path/'token.json', "w") as token:
-            token.write(credentials.to_json())    
-
-        
+            token.write(credentials.to_json())            
         return credentials
+    
     if (token_path/'token.json').exists():
         credentials = Credentials.from_authorized_user_file(str(token_path/'token.json'), DRIVE_API_SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
     if not credentials or not credentials.valid:
         if credentials and credentials.expired and credentials.refresh_token:
             try:
@@ -135,7 +131,9 @@ def google_auth(username):
                 credentials = create_token()
         else:
             credentials = create_token()
-    service = build("driveactivity", "v2", credentials=credentials)
-    return service
+    drive_service = build("drive", "v3", credentials=credentials)
+    drive_activity_service = build("driveactivity", "v2", credentials=credentials)
+    
+    return (drive_service,drive_activity_service)
 
         
