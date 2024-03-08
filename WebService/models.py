@@ -25,7 +25,6 @@ class UserInDB(User):
 class UserCreate(BaseModel):
     username: str
     email: str 
-    disabled: bool 
     password:str
 
 class Collection(BaseModel):

@@ -9,8 +9,12 @@ from document_processor import process_metadata
 from typing import Tuple
 
 
-def store_data_callback(username:str,collection_name:str)-> callable:
-    def callback(file_ids:str):        
+def store_data_callback(username:str)-> callable:
+    """This Function create a callback function to read google Drive Files and store data in vectoe database using ChromaVectorStoreIndex.
+    Using the username this function definite to use specific user
+    """    
+    def callback(file_ids:str,collection_name:str):    
+        """Read google Drive Files and Store in Vector Store """    
         drive_loader = GoogleDriveReader(credentials_path=GOOGLE_CREDENTIALS_PATH,
                 token_path='llama_index_drive_loader/token.json',
                 pydrive_creds_path='llama_index_drive_loader/creds.txt')
@@ -27,6 +31,7 @@ def store_data_callback(username:str,collection_name:str)-> callable:
     return callback 
         
 def get_answer(username:str, collection_name:str , question:str ) -> Tuple[str,dict]:
+    """Ask Query using LLM and return response and Processed metadata """
     chroma_index = ChromaVectorStoreIndex(persist_dir=VECTOR_STORE_PATH/username, collection=collection_name)
    
     index = chroma_index.load_index(persist_dir=VECTOR_STORE_PATH/username, collection_name=collection_name)
