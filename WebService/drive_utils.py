@@ -54,6 +54,7 @@ def watch_drive_load_data(service, session, user_id, callbacks : callable ):
             previous_time_formate=collection.updated_at.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")+'+00:00'
             
             try:
+                
                 results = service.activity().query(body={
                 "filter":f'time > "{previous_time_formate}" AND time < "{current_time_formate}"',
                 'ancestorName':f"items/{collection.collection_id}",
@@ -76,7 +77,7 @@ def watch_drive_load_data(service, session, user_id, callbacks : callable ):
                 if file_list:
                     print('reading new files : ',file_list)
                     try:
-                        callbacks(file_list,collection.collection_id)
+                        callbacks(file_list,collection.collection_name)
                         print('Reading Successful.')
                     except Exception as e:
                         print("Error Occurs while Reading")
@@ -88,12 +89,12 @@ def watch_drive_load_data(service, session, user_id, callbacks : callable ):
                 session.refresh(collection)
             # time.sleep(MONITORING_TIME_DELAY)
             except Exception as e:
-                print(f"Error on fetching information of from folder {collection.collection_name} :", e)
-                print("Retrying.....")
+                # print(f"Error on fetching information of from folder {collection.collection_name} \n\n:", e)
+                # print("Retrying.....")
                 # time.sleep(5)
                 # previous_time = current_time
                 # exit()
-            
+                pass
         # Checking Condition
         user_disable = session.query(models.User).filter_by(user_id=user_id).first().disabled
         
@@ -112,7 +113,7 @@ def drive_link_to_folder_name_and_id ( service, folder_link:str)-> Tuple[str,str
     # return folder_link
 
 def read_drive_folder(service,folder_id,folder_name, callbacks, update_time:Optional[Any]=None):
-     """Watch Drive check if any changes happens or not.
+    """Watch Drive check if any changes happens or not.
     This Works only once If New File Uploaded or created or edited it extract the file ID and using callbacks store in to VectorStoreIndex
 
     Args:
@@ -140,12 +141,7 @@ def read_drive_folder(service,folder_id,folder_name, callbacks, update_time:Opti
             'ancestorName':f"items/{folder_id}",
             "pageSize": 2}).execute()
         except Exception as e:
-            print("Error on fetching information of drive :", e)
-            print("Retrying.....")
-            time.sleep(5)
-            # previous_time = current_time
-            # exit()
-            continue 
+            raise e
             
         activities = results.get('activities', [])
         deleted_file_list=[]
