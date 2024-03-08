@@ -9,58 +9,27 @@
 
 
 ### Features : 
-1. Multi User System : Application can handle multiple user with Proper Security 
-2. Security Feature : 
-    - JWT Authentication - Token base System 
-3. One user can deal with Multiple Google Drive Folder. Application Store Drive Folders as Collection. It gives select option to chose folder name for Question Answers  
-
-4. Automatic Retrieve data from Google Drive folders.
-    - Once Folder Link uploaded in the Software, system will check for all folders or collection in certain time interval if changes occurs on selected Google Drive folders. If occurs then it decode that and read newly created or updated files from the Google Drive and **store** all the data in a vector database for future search.
+1. Automatic Retrieve data from Google Drive folders.
+    - System Check in certain time interval if changes occurs on selected Google Drive if occurs then it decode that and read newly created or updated files from the Google Drive and **store** all the data in a vector database for future search 
     - As Vector Database ```ChromaDB``` has been used 
-5. Automatic observation of Google Drive folders only works on active users.
-6. Retrieve any text-based document files 
+2. Retrieve any text-based document files 
     - System is able to retrieve any kind of text information files Ex. Documents, PDF, PPT, HTML, Markdown, etc.
     - Using ```llama_index.readers.google.GoogleDriveReader``` to load all document from the selected Google Drive folder 
-8. Preprocessing and Vector Store Indexing :
+3. Preprocessing and Vector Store Indexing :
     - Index all the retrieved data by making few pre-processes like Title Extraction, Paragraph Extraction, etc. 
-9.  Google's Gemini Model as LLM to answer the Query 
-10. Answer content is only limited to the selected specific folder name or collection name 
+4.  Google's Gemini Model as LLM to answer the Query 
 
 ### Process 
 1. Create Google Drive Credential and Service Account 
 2. Activate Google Drive API Service 
-2. Activate Google Drive Activity API Service 
-3. Using  Oauth Implement FastAPI Authentication System 
-    - Create JWT Auth Service 
-    - Create User and Collection Table
-    - Create Different Endpoints (End points are mention bellow)
-
-5. Implement Google Drive Monitoring System 
-    - Using User and Collection Database Table running a loop while user is active  
-    - Requesting for activity Google Drive to fetch data during certain time intervals for all collection of the user
+3. Implement Google Drive Monitoring System 
+    - Requesting for activity Google Drive to fetch data during certain time intervals 
     - Checking Changes are available or not 
     - If available read files that are changed 
-    - This loop is running the background task of FastAPI for each User while they are active 
 4. Process data to extract features 
 5. Integrating ChromaDB with llama_index's VectorStoreIndex 
 6. Integrate Gemini to retrieve data 
-7. Implement a frontend with Streamlit and Request library to manage API Requests  
-
-
-
-### API End Points 
-Method | Endpoints         |  Function          
--------|-------------------|------------------------------
-GET    | /user             |  Get Current User 
-POST   | /user             |  Create
-POST   | /token            |  Login For Access Token
-GET    | /user/collections |  Get Collection
-POST   | /user/collections |  Add Collection
-POST   | /user/query       |  Question And Answer
-POST   | /user/disable     |  Logout
--------|-------------------|----------------------------
-
-
+7. Implement a frontend with Gradio 
 
 ### Flow Char Diagram 
 ![flow_chart](https://github.com/arque1393/Document_RAG_from_GDrive_with_Llama_Index/assets/79799118/87f23a83-8b41-45bc-b3a3-7651af98268b)
@@ -78,23 +47,10 @@ POST   | /user/disable     |  Logout
     - contains the function that watches a drive in certain time intervals and using callbacks automatically processes and indexes the documents. 
 - [vector_store.py]()
     - Contains a class ChromaVectorStoreIndex that helps to index documents using ChromaDB 
-- [auth_utils]()
-    - Goolge Service Build and Credential management 
-    - Fast API Auth Utilities 
-- [db.setup]()
-    - Creating Database setup
-- [db.models]()
-    - Creating Database ORM Models 
-- [fast_api_main.py]()
+- [main.py]()
     - The main Module runs in two different independent threads 
         1. Monitor Google Drive to check if any changes happen or not. Update Vector Store Database is updated. 
         2. Run The Gradio interface along with running a query search on the Vector Store 
-
-
-
-
-
-
 
 ## How to **RUN**
 ### Step 1 : Active Google Drive API and Setup Google Credentials 
