@@ -9,8 +9,8 @@ from document_processor import process_metadata
 from typing import Tuple
 
 
-def store_data_callback(username:str,collection_name:str)-> callable:
-    def callback(file_ids:str):        
+def store_data_callback(username:str)-> callable:
+    def callback(file_ids:str,collection_name:str):        
         drive_loader = GoogleDriveReader(credentials_path=GOOGLE_CREDENTIALS_PATH,
                 token_path='llama_index_drive_loader/token.json',
                 pydrive_creds_path='llama_index_drive_loader/creds.txt')

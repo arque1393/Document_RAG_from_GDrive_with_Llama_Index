@@ -16,7 +16,7 @@ DRIVE_API_SCOPES =  ["https://www.googleapis.com/auth/drive.activity.readonly", 
 MONITORING_TIME_DELAY  = 10 
 GOOGLE_GEMINI_API_KEY = os.environ['GOOGLE_API_KEY']
 PARAGRAPH_SPLITTER_EXPRESSION = r'[\n][\s]*[\n][\n\s]*'
-
+GOOGLE_DRIVE_ACTIVITY_PAGE_SIZE = 5
 
 
 

@@ -1,4 +1,7 @@
-from fastapi import Depends, FastAPI, HTTPException, status
+import uvicorn 
+
+
+from fastapi import Depends, FastAPI, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 from db import models 
@@ -11,27 +14,40 @@ from auth_utils import (is_email_or_username_taken,get_password_hash,
 
 from db.setup import get_session,engine
 from sqlalchemy.orm import Session
-from drive_utils import drive_link_to_folder_name_and_id,  read_drive_folder
+from drive_utils import drive_link_to_folder_name_and_id,  read_drive_folder,watch_drive_load_data
 from callbacks import store_data_callback, get_answer
+
 models.Base.metadata.create_all(engine)
 app = FastAPI()
 
 @app.post("/user")
-async def create(user:UserCreate, session:Session = Depends(get_session)):    
+async def create(user:UserCreate, background_task : BackgroundTasks, session:Session = Depends(get_session)):    
     if validate_entity := is_email_or_username_taken(user.email,user.username, models.User,session):
         raise HTTPException(status_code=400, detail=f'{validate_entity} is already taken')    
     new_user = models.User(email = user.email,username=user.username,
                         _password_hash = get_password_hash(user.password) )  
+    new_user.disabled=False
     session.add(new_user)
     session.commit()
     session.refresh(new_user)
-    return new_user
+    
+    #### Enable Background Task 
+    try : 
+        drive_service,drive_activity_service  = google_auth(user.username)
+    except :
+        raise HTTPException(status_code=400, detail = "Service can not be build")
+    background_task.add_task( watch_drive_load_data , drive_activity_service, session,new_user.user_id, store_data_callback(new_user.username)) 
+    ###
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires)
+    return Token(access_token=access_token, token_type="bearer")
 
-@app.post("/token")
+@app.post("/token" )
 # @app.post("/user/token")
 async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],session: Session = Depends(get_session)
-) -> Token:
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    background_task : BackgroundTasks, session: Session = Depends(get_session) ) -> Token:
     user = authenticate_user(form_data.username, form_data.password, session)
     if not user:
         raise HTTPException(
@@ -39,12 +55,22 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if user.disabled :
+        user.disabled= False
+        session.commit()
+        session.refresh(user)
+ 
+        try : 
+            drive_service,drive_activity_service  = google_auth(form_data.username)
+        except :
+            raise HTTPException(status_code=400, detail = "Service can not be build")
+        background_task.add_task( watch_drive_load_data , drive_activity_service, session,user.user_id, store_data_callback(user.username))
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
-    )
+    )    
     return Token(access_token=access_token, token_type="bearer")
-
+    
 @app.get("/user", response_model=User)
 async def read_users_me(
     current_user: Annotated[User, Depends(get_current_active_user)]):
@@ -58,37 +84,39 @@ async def add_collection(current_user: Annotated[User, Depends(get_current_activ
         drive_service,drive_activity_service  = google_auth(current_user.username)
     except :
         raise HTTPException(status_code=400, detail = "Service can not be build")
-    print(folder_info.folder_link)
+    
     folder_name, folder_id =  drive_link_to_folder_name_and_id(drive_service,folder_info.folder_link)
+    
     collection = session.query(models.Collection).filter(
-                models.Collection.collection_name == folder_name
+                models.Collection.collection_id == folder_id
                 and models.Collection.user_id == current_user.user_id  
             ).first() 
     if collection :
-        current_time = datetime.now()        
-        try:
-            read_drive_folder(drive_activity_service, folder_id ,store_data_callback(current_user.username,folder_name), collection.updated_at  )
-        except Exception as e : 
-            raise HTTPException(status_code=400, detail=f'error :: {e}')
         
-        collection.updated_at= current_time
+        # try:
+        #     read_drive_folder(drive_activity_service, folder_id ,folder_name, store_data_callback(current_user.username), collection.updated_at  )
+        # except Exception as e : 
+        #     raise HTTPException(status_code=400, detail=f'error :: {e}')
+        
+        collection.updated_at =  datetime.now() 
         session.commit()
         session.refresh(collection)
-        return {"message": "Collection Update successfully "}
+        raise HTTPException(status_code=400, detail=' "Collection is Already Exist "')  
     
+
+    try: 
+        read_drive_folder(drive_activity_service, folder_id ,folder_name, store_data_callback(current_user.username))
+    except Exception as e : 
+        raise HTTPException(status_code=500,detail=f'error :: {e}')
     new_collection = models.Collection( 
-                collection_name =  folder_name,
-                user_id = current_user.user_id, created_at = datetime.now(), 
-                updated_at =  datetime.now() )  
+            collection_id = folder_id,
+            collection_name =  folder_name,
+            user_id = current_user.user_id, created_at = datetime.now(), 
+            updated_at =  datetime.now() )  
     
     session.add(new_collection)
     session.commit()
     session.refresh(new_collection)
-    try: 
-        read_drive_folder(drive_activity_service, folder_id ,store_data_callback(current_user.username,folder_name))
-    except Exception as e : 
-        raise HTTPException(status_code=500,detail=f'error :: {e}')
-    
     return {"message": "Collection Add successfully "}
 
 @app.get("/user/collections")
@@ -108,3 +136,6 @@ async def question_and_answer(current_user: Annotated[User, Depends(get_current_
     session.commit()
     session.refresh(current_user)
     
+    
+if __name__ == '__main__':
+    uvicorn.run(app, host="127.0.0.1", port=8000)

@@ -53,7 +53,6 @@ def get_password_hash(password):
 
 def authenticate_user(username: str, password: str, session:Session):
     if user := session.query(models.User).filter_by(username=username).first():
-        print ( user)
         return user if verify_password(password, user._password_hash) else False
     else: return False
 
