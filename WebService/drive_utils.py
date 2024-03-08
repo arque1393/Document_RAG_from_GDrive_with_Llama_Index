@@ -31,10 +31,16 @@ remove_activity:str = 'delete'
 ### Define function to check Drive Updates
 def watch_drive_load_data(service, session, user_id, callbacks : callable ):
     """Watch Drive check if any changes happens or not.
+    This Works in a loop controlled by the db.models.User.disabled parameter. 
     If New File Uploaded or created or edited it extract the file ID and using callbacks store in to VectorStoreIndex
 
     Args:
-        folder_id (str): The id of that specific folder of google drive Where to search changes 
+        service : GoogleDriveService or Resource object  :
+            Use to fetch Drive activity Information 
+        session : FastAPI SessionLocal object : 
+            Use to access specific users and collections. and also update the time. 
+        user_if : str
+            The id of that specific user  
         callbacks (callable): the function that store the file content in Vector Database
     """
     user_disable = session.query(models.User).filter_by(user_id=user_id).first().disabled
@@ -106,6 +112,21 @@ def drive_link_to_folder_name_and_id ( service, folder_link:str)-> Tuple[str,str
     # return folder_link
 
 def read_drive_folder(service,folder_id,folder_name, callbacks, update_time:Optional[Any]=None):
+     """Watch Drive check if any changes happens or not.
+    This Works only once If New File Uploaded or created or edited it extract the file ID and using callbacks store in to VectorStoreIndex
+
+    Args:
+        service : GoogleDriveService or Resource object  :
+            Use to fetch Drive activity Information 
+        folder_id: str 
+            Use to fetch data from google 
+        folder_name : str
+           Use to pass callback as collection name   
+        callbacks (callable): the function that store the file content in Vector Database
+        
+        update_time:str 
+            If available then search activities after updated time 
+    """
     if not update_time:
         update_time = datetime.datetime.now() - datetime.timedelta(days=365)
     while True:

@@ -52,12 +52,14 @@ def get_password_hash(password):
     
 
 def authenticate_user(username: str, password: str, session:Session):
+    """Authenticated an user"""
     if user := session.query(models.User).filter_by(username=username).first():
         return user if verify_password(password, user._password_hash) else False
     else: return False
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    """Create Access Token usning Openssl Secret key """
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -69,6 +71,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)],session:Session=Depends(get_session)):
+    """Authenticate user and return current user if authentication success"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -88,9 +91,8 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)],session
     
 
 
-async def get_current_active_user(
-    current_user: Annotated[User, Depends(get_current_user)]
-):
+async def get_current_active_user(current_user: Annotated[User, Depends(get_current_user)]):
+    """Return Users if only user is active"""
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
@@ -99,6 +101,14 @@ async def get_current_active_user(
 
 
 def google_auth(username):
+    """Create authentication token by Google for connecting drive and access Drive files and Drive Activity. Store the Google Token in side server file store and using this credential token build two services 
+        1. Google Drive Service (V3)
+        2. Google Drive Activity Service (V2)
+    Args:
+        username (): Identify the the token using username 
+    Returns:
+        Tuple of Two Service of Google Drive 
+    """
     from typing import Any
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
