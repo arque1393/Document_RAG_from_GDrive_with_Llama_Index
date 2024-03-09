@@ -4,9 +4,11 @@
 ## Project Information and Overview 
 
 ### Demonstration Video Link 
-1. Main Video Link https://1drv.ms/u/s!Aj2Nbw_0FL8HibtIga-xfVH0gXEB9g?e=yNsozX
-2. Important Additional Information Video  https://1drv.ms/u/s!Aj2Nbw_0FL8HibtHaAfhj89bXEq0xA?e=lfcmJ8
-
+- Previous Task Video 
+    1. Main Video Link https://1drv.ms/u/s!Aj2Nbw_0FL8HibtIga-xfVH0gXEB9g?e=yNsozX
+    2. Important Additional Information Video  https://1drv.ms/u/s!Aj2Nbw_0FL8HibtHaAfhj89bXEq0xA?e=lfcmJ8
+- New Update Task's Video 
+    - https://1drv.ms/u/s!Aj2Nbw_0FL8HjagB_ZtTmnP9-OpWOg?e=XsALLn
 
 ### Features : 
 1. Multi User System : Application can handle multiple user with Proper Security 
@@ -119,7 +121,10 @@ POST   | /user/disable     |  Logout
 ### Step 2: Set API Key in .env file 
 - follow this site to create easy API key https://aistudio.google.com/app/apikey
 
-Please Modify the Constant Module for any changes before RUN
+    - Please Modify the Constant Module for any changes before RUN
+    - Add Google Drive OAuth Client ans Service Account Key as shown in example 
+    - Create .env file as Shown in example 
+#### Install Requirements
 ```bash
 python -m venv .env 
 ## Run from the Git Bash Shell 
@@ -127,9 +132,21 @@ source ./env/Scripts/activate
 ## Run from the Command Prompt Shell 
 # ./env/Scripts/activate.bat
 pip install -r requirements.txt
-cd WebService
-python main.py
 ```
+#### Running Backend Server 
+
+```bash
+cd WebService
+python fast_api_main.py
+```
+
+#### Running Frontend Server 
+```bash 
+cd Frontend
+streamlit run main.py
+```
+
+
 
 
 

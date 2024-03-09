@@ -5,7 +5,12 @@ key = b'XCZhJ6fcinvUorn-xrnW6uPYcMbm59cbksIpxQB-ADo=' # For local Encryption
 
 
 
-
+class NotAuthenticatedException(Exception):    
+    def __init__(self, message="You are Not Authenticated", **kwargs):
+        self.message = message
+    def __str__(self):
+        return self.message
+    
 
 
 def get_token ():
@@ -22,7 +27,10 @@ def save_token(token):
         f.write(encrypted_token)
         
 def send_query(question,collection_name):
-    access_token = get_token()
+    try : 
+        access_token = get_token()
+    except: 
+        raise NotAuthenticatedException()
     
     
     url = 'http://127.0.0.1:8000/user/query'
@@ -68,7 +76,10 @@ def signup_req(username,email,password):
         return ('failed',f"Signup Error:{detail}")
 def get_collections():
     url = 'http://127.0.0.1:8000/user/collections'
-    access_token = get_token()
+    try:
+        access_token = get_token()
+    except:
+        raise NotAuthenticatedException()
     headers = {
         'accept': 'application/json',
         'Authorization': f'Bearer {access_token}',
@@ -84,7 +95,10 @@ def get_collections():
 
 def create_collection(folder_link):
     url = 'http://127.0.0.1:8000/user/collections'
-    access_token = get_token()    
+    try : 
+        access_token = get_token()    
+    except: 
+        raise NotAuthenticatedException()
     headers = {
         'accept': 'application/json',
         'Authorization': f'Bearer {access_token}',

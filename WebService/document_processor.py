@@ -52,11 +52,11 @@ def process_metadata(metadata:dict):
     """
     if not metadata: return "No Metadata found"
     extractor_list = ['author','file name', 'document_title', 'page_label','paragraph_no','created at', 'modified at'] 
-    extracted_metadata=''
+    extracted_metadata={}
     metadata=iter(metadata.values()).__next__()
     for key in extractor_list :
         try: 
-            extracted_metadata = extracted_metadata + key + f" :  {metadata[key]}"+'\n'
+            extracted_metadata[key]  = metadata[key]
         except: 
             continue
     return extracted_metadata

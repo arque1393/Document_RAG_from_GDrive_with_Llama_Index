@@ -25,24 +25,27 @@ google-auth-oauthlib
 
 
 chromadb
-fastapi
+# fastapi
 llama-index-vector-stores-chroma
 sentence-transformers
-gradio
+# gradio
 docx2txt
 pypdf
-
 
 ## Fast API and Related Modules 
 fastapi
 uvicorn 
-pydantic 
+pydantic[email]
+
+# FastAPI Authentication Related Modules 
 python-jose[cryptography]
 passlib[bcrypt]
+
+# Database 
 sqlalchemy 
 psycopg2
 
-
+# Fromtend 
 streamlit 
 streamlit-option-menu
 streamlit-extras
