@@ -1,7 +1,7 @@
 import streamlit as st 
 from streamlit_extras.switch_page_button import switch_page
 from request_manager import get_collections,send_query
-
+from request_manager import logout
 from request_manager import create_collection
 
 import json
@@ -69,3 +69,6 @@ if st.button("Submit Query"):
 
 
 # switch_page('rag')
+if st.button('Logout'):
+    logout()
+    switch_page('login')

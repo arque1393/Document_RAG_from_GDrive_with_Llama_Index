@@ -119,3 +119,15 @@ def create_collection(folder_link):
     data = {"folder_link": folder_link}
     response = requests.post(url, headers=headers, json=data)
     return response.json()
+
+
+
+def logout():
+    token = get_token()
+    url = 'http://127.0.0.1:8000/user/disable'
+    headers = {
+        'accept': 'application/json',
+        'Authorization': f'Bearer {token}'
+    }
+    response = requests.post(url, headers=headers)
+    
