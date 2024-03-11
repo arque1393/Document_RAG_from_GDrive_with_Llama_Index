@@ -28,11 +28,11 @@
 9.  Google's Gemini Model as LLM to answer the Query 
 10. Answer content is only limited to the selected specific folder name or collection name 
 
-### Process 
+### Solution Process Steps:
 1. Create Google Drive Credential and Service Account 
 2. Activate Google Drive API Service 
 2. Activate Google Drive Activity API Service 
-3. Using  Oauth Implement FastAPI Authentication System 
+3. Using  OAuth Implement FastAPI Authentication System 
     - Create JWT Auth Service 
     - Create User and Collection Table
     - Create Different Endpoints (End points are mention bellow)
@@ -83,14 +83,23 @@ POST   | /user/disable     |  Logout
 - [auth_utils]()
     - Goolge Service Build and Credential management 
     - Fast API Auth Utilities 
+-[callbacks]()
+    - Contains two function one is for Processing and storing data in Vector Database 
+    - Second one is responsible to ask question using Gemini LLM  
 - [db.setup]()
     - Creating Database setup
 - [db.models]()
     - Creating Database ORM Models 
 - [fast_api_main.py]()
-    - The main Module runs in two different independent threads 
-        1. Monitor Google Drive to check if any changes happen or not. Update Vector Store Database is updated. 
-        2. Run The Gradio interface along with running a query search on the Vector Store 
+    - This is Fast API main module 
+        1. All fast API end points are define here. 
+        2. In FastAPI Background Thread My Google Drive Watch Function is running while user is enable 
+        3. For every user only one background task is running and Different Collections/folders are checking Linearly if updates occurs or not. 
+
+### Front End 
+- [request_manager.py] - This file contains All API Request Function for client implemented by requests module in python 
+- [main.py] - main streamlit Page 
+- pages  folder contains login and signup page of streamlit 
 
 
 
