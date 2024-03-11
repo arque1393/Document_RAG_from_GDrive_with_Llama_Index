@@ -18,7 +18,7 @@ GOOGLE_GEMINI_API_KEY = os.environ['GOOGLE_API_KEY']
 PARAGRAPH_SPLITTER_EXPRESSION = r'[\n][\s]*[\n][\n\s]*'
 GOOGLE_DRIVE_ACTIVITY_PAGE_SIZE = 5
 
-FERNET_KEY = os.environ["T_KEY"].encode() # For encrypt Google drive Access token in server 
+FERNET_KEY = os.environ["FERNET_KEY"].encode() # For encrypt Google drive Access token in server 
 
 ### Fast API Auth System Information 
 JWT_AUTH_SECRET_KEY = os.environ['JWT_AUTH_SECRET_KEY']
