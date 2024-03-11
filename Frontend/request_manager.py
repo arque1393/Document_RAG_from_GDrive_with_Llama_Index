@@ -58,9 +58,13 @@ def login_req(username,password):
         return ('success',"None")
     except Exception as e:
         detail = response.json()['detail']
-        detail = detail[0]['loc'][1]+" "+detail[0]['msg']
-        return ('failed',f"Signup Error  \n {detail}")
-    
+        try: 
+            detail = detail[0]['loc'][1]+" "+detail[0]['msg']        
+        except :
+            pass 
+        finally:
+            return ('failed',f"Signup Error  \n {detail}")
+            
         
     # print("Login Done")
 def signup_req(username,email,password):
@@ -75,8 +79,12 @@ def signup_req(username,email,password):
         return ('success',"None")
     except Exception as e:
         detail = response.json()['detail']
-        detail = detail[0]['loc'][1]+" "+detail[0]['msg']
-        return ('failed',f"Signup Error  \n {detail}")
+        try: 
+            detail = detail[0]['loc'][1]+" "+detail[0]['msg']        
+        except :
+            pass 
+        finally:
+            return ('failed',f"Signup Error  \n {detail}")
     
 def get_collections():
     url = 'http://127.0.0.1:8000/user/collections'

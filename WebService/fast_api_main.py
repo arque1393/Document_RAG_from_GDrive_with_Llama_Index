@@ -23,14 +23,16 @@ async def create(user:UserCreate, background_task : BackgroundTasks, session:Ses
         raise HTTPException(status_code=400, detail=f'{validate_entity} is already taken')    
     new_user = models.User(email = user.email,username=user.username,
                         _password_hash = get_password_hash(user.password) )  
+    session.add(new_user)
+    session.commit()
+    session.refresh(new_user)
     try : 
         drive_service,drive_activity_service  = google_auth(user.username)
         background_task.add_task( watch_drive_load_data , drive_activity_service, session,new_user.user_id, store_data_callback(new_user.username)) 
-    except :
+    except Exception as e:
         new_user.disabled=True  
-        raise HTTPException(status_code=400, detail = "Service can not be build")
+        raise HTTPException(status_code=400, detail = f"Service can not be build{e}")
     finally:
-        session.add(new_user)
         session.commit()
         session.refresh(new_user)
         

@@ -1,22 +1,31 @@
+from models import TokenData,User
 from datetime import datetime, timedelta, timezone
-from models import TokenData,User,UserInDB
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-from typing import Annotated
 from fastapi import Depends, HTTPException, status
-from constants import  JWT_AUTH_SECRET_KEY , ALGORITHM, GOOGLE_CLIENT_SECRET, DRIVE_API_SCOPES
-from db.setup import get_session, Base
 from pydantic import EmailStr
+from jose import JWTError, jwt
+from cryptography.fernet import Fernet
+from pathlib import Path 
+import json
+from typing import Annotated,Any
+
+from db.setup import get_session, Base
 from db import models 
 from sqlalchemy.orm import Session
-from pathlib import Path 
+
+
+# Google Authentication Service 
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+
+from constants import  JWT_AUTH_SECRET_KEY , ALGORITHM, GOOGLE_CLIENT_SECRET, DRIVE_API_SCOPES, FERNET_KEY
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-
-
+cipher_suite = Fernet(FERNET_KEY)
 
 def is_email_or_username_taken(email: EmailStr,username:str, model:Base , session:Session ) -> bool | str:
     '''check in database the given email is already exist or not
@@ -109,29 +118,32 @@ def google_auth(username):
     Returns:
         Tuple of Two Service of Google Drive 
     """
-    from typing import Any
-    from google.auth.transport.requests import Request
-    from google.oauth2.credentials import Credentials
-    from google_auth_oauthlib.flow import InstalledAppFlow
-    from googleapiclient.discovery import build
-    from googleapiclient.errors import HttpError
+
     credentials:Any = None
-    token_path = Path(fr"../CredentialHub/{username}").resolve()
+    token_path = Path(fr"./CredentialHub/{username}").resolve()
     if not token_path.exists():
         token_path.mkdir(parents=True)
         
     def create_token():
+        """Create Google Drive Access Token and Refresh token using OAuth2 Client Secret 
+        Returns:
+            dict: Json stile dict containing Access token and Refresh token  
+        """
         flow = InstalledAppFlow.from_client_secrets_file(
             GOOGLE_CLIENT_SECRET,
             DRIVE_API_SCOPES
         )
         credentials = flow.run_local_server(port=0)
-        with open(token_path/'token.json', "w") as token:
-            token.write(credentials.to_json())            
+        with open(token_path/'token.b', "wb") as token:
+            encrypted_token = cipher_suite.encrypt(credentials.to_json().encode())
+            token.write(encrypted_token)            
         return credentials
     
-    if (token_path/'token.json').exists():
-        credentials = Credentials.from_authorized_user_file(str(token_path/'token.json'), DRIVE_API_SCOPES)
+    if (token_path/'token.b').exists():
+        with open(token_path/'token.b','rb') as f:
+            decrypted_token = cipher_suite.decrypt(f.read()).decode()
+            token_dict = json.loads(decrypted_token)
+        credentials = Credentials.from_authorized_user_info(token_dict, DRIVE_API_SCOPES)
     if not credentials or not credentials.valid:
         if credentials and credentials.expired and credentials.refresh_token:
             try:
