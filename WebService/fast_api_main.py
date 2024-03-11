@@ -13,9 +13,32 @@ from drive_utils import( drive_link_to_folder_name_and_id,read_drive_folder,
 from db.setup import get_session,engine
 from sqlalchemy.orm import Session
 from callbacks import store_data_callback, get_answer
+from contextlib import asynccontextmanager
+
+
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI, session:Session = Depends(get_session) ):
+    yield
+    for user in session.query(models.User).all() :
+        user.disabled = True 
+        session.commit()
+        session.refresh(user)
+
+
+
+
 
 models.Base.metadata.create_all(engine)
-app = FastAPI()
+app = FastAPI(lifespan= lifespan)
+
+# @app.on_event("shutdown")
+# async def shutdown_event( session:Session = Depends(get_session)):
+#     for user in session.query(models.User).all() :
+#         user.disabled = True 
+#         session.commit()
+#         session.refresh(user)
 
 @app.post("/user")
 async def create(user:UserCreate, background_task : BackgroundTasks, session:Session = Depends(get_session)):    
@@ -31,7 +54,7 @@ async def create(user:UserCreate, background_task : BackgroundTasks, session:Ses
         background_task.add_task( watch_drive_load_data , drive_activity_service, session,new_user.user_id, store_data_callback(new_user.username)) 
     except Exception as e:
         new_user.disabled=True  
-        raise HTTPException(status_code=400, detail = f"Service can not be build{e}")
+        raise HTTPException(status_code=400, detail = f"Service can not be build")
     finally:
         session.commit()
         session.refresh(new_user)
@@ -97,7 +120,8 @@ async def add_collection(current_user: Annotated[User, Depends(get_current_activ
     try:
         if check_folder_permission(drive_service,folder_id) == 'anyone':
             read_drive_folder(drive_activity_service, folder_id ,folder_name, store_data_callback(current_user.username))
-        else: raise HTTPException(status_code= 403, detail = "Folder is restricted Please give the view permission for everyone")
+        else: 
+            raise HTTPException(status_code= 403, detail = "Folder is restricted Please give the view permission for everyone")
     except DriveFolderDoesNotExist as e :
         raise HTTPException(status_code=404,detail=f'{e}')
     except Exception as e : 

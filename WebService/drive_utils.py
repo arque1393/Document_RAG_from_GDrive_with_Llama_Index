@@ -38,6 +38,8 @@ def check_folder_permission(service, folder_id):
     except HttpError  as e:
         if e.status_code == 500:
             raise DriveFolderDoesNotExist()
+        elif e.status_code ==403:
+            raise Exception(message = "This Folder belongs to another Google Account")            
         else :
             raise Exception(f"{e}")
 
@@ -153,8 +155,6 @@ def read_drive_folder(service,folder_id,folder_name, callbacks, update_time:Opti
             "filter":f'time > "{update_time_formate}" AND time < "{current_time_formate}"',
             'ancestorName':f"items/{folder_id}",
             "pageSize": 2}).execute()
-
-            
             activities = results.get('activities', [])
             deleted_file_list=[]
             file_list:list[str] = []
