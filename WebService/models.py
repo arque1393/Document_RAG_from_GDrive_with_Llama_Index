@@ -1,5 +1,5 @@
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr,Field
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -22,9 +22,9 @@ class UserInDB(User):
 
 
 class UserCreate(BaseModel):
-    username: str
+    username:str = Field(..., min_length=6,max_length=100)
     email: EmailStr 
-    password:str
+    password:str = Field(..., min_length=4,max_length=100)
 
 class Collection(BaseModel):
     collection_id:str

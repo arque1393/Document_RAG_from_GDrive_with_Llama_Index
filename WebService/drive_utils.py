@@ -4,20 +4,25 @@ import datetime
 import time 
 
 # For OAuth and maintaining Drive Events 
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-
 from pathlib import Path
 # for Retrieving data from Google Drive using Llama index 
 from constants import ( GOOGLE_DRIVE_ACTIVITY_PAGE_SIZE,MONITORING_TIME_DELAY)
 from typing import Any,Optional,Tuple
 import re
-
 from db import models 
 
+
+
+
+class DriveFolderDoesNotExist(Exception):
+    def __init__(self, message = "Unable to find the folder ID in your Google Drive Account.\n Do not enter shared folder's link.") -> None:
+        super().__init__()
+        self.message = message
+    def __raper__(self):
+        return self.message
+    def __self__(self):
+        return self.message
 # Helper Function to extract file IDs 
 def extract_file_ids(target_list:list[Any]):
     return [target['driveItem']['name'][6:] for target in target_list 
@@ -26,7 +31,15 @@ def extract_file_ids(target_list:list[Any]):
 reader_activity_list:list[str] = ['create','edit','rename']
 remove_activity:str = 'delete'
 
-
+def check_folder_permission(service, folder_id):
+    try:
+        permissions = service.permissions().list(fileId=folder_id, fields="permissions(type)").execute()
+        return (iter(permissions['permissions']).__next__()['type'])
+    except HttpError  as e:
+        if e.status_code == 500:
+            raise DriveFolderDoesNotExist()
+        else :
+            raise Exception(f"{e}")
 
 ### Define function to check Drive Updates
 def watch_drive_load_data(service, session, user_id, callbacks : callable ):
@@ -122,7 +135,7 @@ def read_drive_folder(service,folder_id,folder_name, callbacks, update_time:Opti
         folder_id: str 
             Use to fetch data from google 
         folder_name : str
-           Use to pass callback as collection name   
+            Use to pass callback as collection name   
         callbacks (callable): the function that store the file content in Vector Database
         
         update_time:str 
@@ -140,32 +153,38 @@ def read_drive_folder(service,folder_id,folder_name, callbacks, update_time:Opti
             "filter":f'time > "{update_time_formate}" AND time < "{current_time_formate}"',
             'ancestorName':f"items/{folder_id}",
             "pageSize": 2}).execute()
-        except Exception as e:
-            raise e
+
             
-        activities = results.get('activities', [])
-        deleted_file_list=[]
-        file_list:list[str] = []
-        for activity in activities:
-            if iter(activity['primaryActionDetail']).__next__() in reader_activity_list :
-                file_list+=extract_file_ids(activity['targets'])
-            if iter(activity['primaryActionDetail']).__next__() == remove_activity :
-                deleted_file_list+=extract_file_ids(activity['targets'])
-        for item in file_list :
-            if item in deleted_file_list:
-                file_list.remove(item)
-        
-        file_list=list(set(file_list))
-        print("documents lodes : ", file_list)
-        if file_list:
-            print('reading new files : ',file_list)
-            try:
-                callbacks(file_list,folder_name)
-                print('Reading Successful.')
-            except Exception as e:
-                print("Error Occurs while Reading")
-                print(e)
-            finally:
-                print("Server is waiting for next update in google drive ")
+            activities = results.get('activities', [])
+            deleted_file_list=[]
+            file_list:list[str] = []
+            for activity in activities:
+                if iter(activity['primaryActionDetail']).__next__() in reader_activity_list :
+                    file_list+=extract_file_ids(activity['targets'])
+                if iter(activity['primaryActionDetail']).__next__() == remove_activity :
+                    deleted_file_list+=extract_file_ids(activity['targets'])
+            for item in file_list :
+                if item in deleted_file_list:
+                    file_list.remove(item)
+            
+            file_list=list(set(file_list))
+            print("documents lodes : ", file_list)
+            if file_list:
+                print('reading new files : ',file_list)
+                try:
+                    callbacks(file_list,folder_name)
+                    print('Reading Successful.')
+                except Exception as e:
+                    print("Error Occurs while Reading")
+                    print(e)
+                finally:
+                    print("Server is waiting for next update in google drive ")
+        except HttpError as e:
+            if e.status_code == 500:
+                raise DriveFolderDoesNotExist()
+            else : 
+                raise Exception(f'{e}')
+        except Exception as e : 
+            raise  e
         time.sleep(MONITORING_TIME_DELAY) 
         break 
