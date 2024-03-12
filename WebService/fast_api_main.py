@@ -15,6 +15,10 @@ from sqlalchemy.orm import Session
 from callbacks import store_data_callback, get_answer
 from contextlib import asynccontextmanager
 
+### Connecting Frontend 
+from fastapi.responses import RedirectResponse
+from subprocess import Popen, DEVNULL
+Popen(["streamlit", "run", "../Frontend/main.py"], stdout=DEVNULL, stderr=DEVNULL)
 
 
 
@@ -39,6 +43,11 @@ app = FastAPI(lifespan= lifespan)
 #         user.disabled = True 
 #         session.commit()
 #         session.refresh(user)
+
+
+@app.get('/')
+async def frontend():
+    return RedirectResponse(url="http://localhost:8501")
 
 @app.post("/user")
 async def create(user:UserCreate, background_task : BackgroundTasks, session:Session = Depends(get_session)):    
