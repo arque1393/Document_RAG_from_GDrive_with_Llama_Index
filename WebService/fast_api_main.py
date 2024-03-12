@@ -112,9 +112,10 @@ async def add_collection(current_user: Annotated[User, Depends(get_current_activ
         drive_service,drive_activity_service  = google_auth(current_user.username)
     except :
         raise HTTPException(status_code=400, detail = "Service can not be build")
-    
-    folder_name, folder_id =  drive_link_to_folder_name_and_id(drive_service,folder_info.folder_link)
-    
+    try:
+        folder_name, folder_id =  drive_link_to_folder_name_and_id(drive_service,folder_info.folder_link)
+    except: 
+        raise HTTPException(status_code=400, detail = "Provided Link Can not a proper Google Drive Link")
     collection = session.query(models.Collection).filter(
                 models.Collection.collection_id == folder_id
                 and models.Collection.user_id == current_user.user_id  
