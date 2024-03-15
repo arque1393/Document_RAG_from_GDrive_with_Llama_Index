@@ -15,3 +15,4 @@ llama_index_drive_loader/
 *.db
 *token*
 .tmp/
+demo*

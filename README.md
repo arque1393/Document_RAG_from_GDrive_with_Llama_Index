@@ -141,21 +141,14 @@ source ./env/Scripts/activate
 ## Run from the Command Prompt Shell 
 # ./env/Scripts/activate.bat
 pip install -r requirements.txt
+
 ```
 #### Running Backend Server 
-
+With Running Backend Server Frontend Server will run automatically 
 ```bash
 cd WebService
 python fast_api_main.py
 ```
-
-#### Running Frontend Server 
-```bash 
-cd Frontend
-streamlit run main.py
-```
-
-
 
 
 

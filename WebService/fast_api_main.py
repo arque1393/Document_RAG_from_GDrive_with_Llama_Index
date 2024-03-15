@@ -15,6 +15,10 @@ from sqlalchemy.orm import Session
 from callbacks import store_data_callback, get_answer
 from contextlib import asynccontextmanager
 
+### Connecting Frontend 
+from fastapi.responses import RedirectResponse
+from subprocess import Popen, DEVNULL
+Popen(["streamlit", "run", "../Frontend/main.py"], stdout=DEVNULL, stderr=DEVNULL)
 
 
 
@@ -39,6 +43,11 @@ app = FastAPI(lifespan= lifespan)
 #         user.disabled = True 
 #         session.commit()
 #         session.refresh(user)
+
+
+@app.get('/')
+async def frontend():
+    return RedirectResponse(url="http://localhost:8501")
 
 @app.post("/user")
 async def create(user:UserCreate, background_task : BackgroundTasks, session:Session = Depends(get_session)):    
@@ -103,9 +112,10 @@ async def add_collection(current_user: Annotated[User, Depends(get_current_activ
         drive_service,drive_activity_service  = google_auth(current_user.username)
     except :
         raise HTTPException(status_code=400, detail = "Service can not be build")
-    
-    folder_name, folder_id =  drive_link_to_folder_name_and_id(drive_service,folder_info.folder_link)
-    
+    try:
+        folder_name, folder_id =  drive_link_to_folder_name_and_id(drive_service,folder_info.folder_link)
+    except: 
+        raise HTTPException(status_code=400, detail = "Provided Link Can not a proper Google Drive Link")
     collection = session.query(models.Collection).filter(
                 models.Collection.collection_id == folder_id
                 and models.Collection.user_id == current_user.user_id  
