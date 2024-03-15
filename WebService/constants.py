@@ -24,3 +24,9 @@ FERNET_KEY = os.environ["FERNET_KEY"].encode() # For encrypt Google drive Access
 JWT_AUTH_SECRET_KEY = os.environ['JWT_AUTH_SECRET_KEY']
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+## One Drive Constant 
+ONEDRIVE_SCOPE = ['Files.Read']
+ONEDRIVE_LOGIN_EXPIRE_DURATION = 600
+TEMP_STORE_PATH = Path('./tmp_au4os42asx4fgj45mz9db4zj5r3xd7ghm/')
+GRAPH_API_ENDPOINT = 'https://graph.microsoft.com/v1.0'
+ONE_DRIVE_ITEM_ENDPOINT = GRAPH_API_ENDPOINT + r'/me/drive/items'

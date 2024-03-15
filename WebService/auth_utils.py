@@ -14,6 +14,14 @@ from db.setup import get_session, Base
 from db import models 
 from sqlalchemy.orm import Session
 
+import webbrowser
+from datetime import datetime
+import json
+import os
+import time
+import msal
+from threading import Thread
+from pathlib import Path 
 
 # Google Authentication Service 
 from google.auth.transport.requests import Request
@@ -21,7 +29,8 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-from constants import  JWT_AUTH_SECRET_KEY , ALGORITHM, GOOGLE_CLIENT_SECRET, DRIVE_API_SCOPES, FERNET_KEY
+from constants import  (JWT_AUTH_SECRET_KEY , ALGORITHM, ONEDRIVE_LOGIN_EXPIRE_DURATION,
+    GOOGLE_CLIENT_SECRET, DRIVE_API_SCOPES, FERNET_KEY,ONEDRIVE_SCOPE)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -157,4 +166,66 @@ def google_auth(username):
     
     return (drive_service,drive_activity_service)
 
+class MSAuth():
+    def __init__(self, client_id) -> None:
+        self.client_id = client_id
+        self.user_token = None
+        self.__access_token = None
+    @property
+    def access_token(self):
+        start_time = time.time()
+        while True : 
+            if time.time() - start_time > ONEDRIVE_LOGIN_EXPIRE_DURATION  : 
+                raise Exception("Access Token is not fount")
+            if not self.__access_token :
+                continue 
+            break
+        return self.__access_token
+    
+    def _save_access_token(self,client,flow,access_token_cache):        
+        webbrowser.open('https://microsoft.com/devicelogin')
+        token_response = client.acquire_token_by_device_flow(flow)
+        self.__access_token =  token_response
+        with open('ms_graph_api_token.json', 'w') as _f:
+            _f.write(access_token_cache.serialize())
+            
+    def get_access_token(self):
+        access_token_cache = msal.SerializableTokenCache()
+        flow = None
+        if os.path.exists('ms_graph_api_token.json'):
+            with open("ms_graph_api_token.json", "r") as token_file : 
+                token_str = token_file.read()
+            access_token_cache.deserialize(token_str)
+            access_token = json.loads(token_str)['AccessToken']
+            token_expiration = datetime.fromtimestamp(
+                int(access_token[iter(access_token).__next__()]['expires_on']))
+            if datetime.now() > token_expiration:
+                os.remove('ms_graph_api_token.json')
+                access_token_cache = msal.SerializableTokenCache()
+        # assign a SerializableTokenCache object to the client instance
+        client = msal.PublicClientApplication(client_id=self.client_id, token_cache=access_token_cache)
+
+        if accounts:= client.get_accounts():
+            token_response = client.acquire_token_silent(ONEDRIVE_SCOPE, accounts[0])
+            self.__access_token = token_response
+        else:
+            flow = client.initiate_device_flow(scopes=ONEDRIVE_SCOPE)
+            # webbrowser.open('https://microsoft.com/devicelogin')
+            # token_response = client.acquire_token_by_device_flow(flow)
+            Thread(target=lambda:self._save_access_token(client,flow,access_token_cache)).start()
+            time.sleep(0.1)
+        if flow : 
+            return flow.get('user_code')
         
+    
+if __name__=='__main__':
+    client_id  =  '8c849b5d-cd74-4e8f-adc9-d7534074b99b'
+    # share_link = 'https://1drv.ms/f/s!Aj2Nbw_0FL8HjagQQk9_gLSe6ZI9Cg?e=PRPUjd'
+    # folder_id = extract_id_from_one_drive_link(share_link)
+    ms_auth = MSAuth(client_id)
+    user_code = ms_auth.get_access_token()
+    print(user_code)
+    access_token = ms_auth.access_token
+    print(access_token)
+    # docs = ms_auth.load_data(folder_id)
+    # print (docs)

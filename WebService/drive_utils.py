@@ -1,5 +1,5 @@
 # Basic Module 
-import os.path
+
 import datetime 
 import time 
 
@@ -7,11 +7,21 @@ import time
 from googleapiclient.errors import HttpError
 from pathlib import Path
 # for Retrieving data from Google Drive using Llama index 
-from constants import ( GOOGLE_DRIVE_ACTIVITY_PAGE_SIZE,MONITORING_TIME_DELAY)
+from constants import ( GOOGLE_DRIVE_ACTIVITY_PAGE_SIZE,
+                       ONE_DRIVE_ITEM_ENDPOINT,MONITORING_TIME_DELAY, TEMP_STORE_PATH)
 from typing import Any,Optional,Tuple
 import re
 from db import models 
 
+## OneDrive Utilities import 
+import webbrowser
+from datetime import datetime
+import json
+import os
+import msal
+from threading import Thread
+import requests
+from llama_index.core import SimpleDirectoryReader
 
 
 
@@ -188,3 +198,56 @@ def read_drive_folder(service,folder_id,folder_name, callbacks, update_time:Opti
             raise  e
         time.sleep(MONITORING_TIME_DELAY) 
         break 
+    
+    
+    
+############################################################################################
+################################ One Drive Access Utilities ################################
+############################################################################################
+
+class OneDriveReader():
+    def __init__(self, access_token) -> None:
+        self.access_token = access_token
+        
+    def _get_headers(self):
+        access_token = self.access_token()
+        return {'Authorization': 'Bearer '+ access_token['access_token']}
+    
+    def _parse_folder_load_files(self, folder_id , recursive = True):
+        response_file_info = requests.get(
+                ONE_DRIVE_ITEM_ENDPOINT+rf'/{folder_id}/children',
+                headers=self._get_headers()
+            )
+        file_dict = {}
+        # display(response_file_info.json())
+        for item in response_file_info.json().get('value'): 
+            if item.get('folder') and recursive :
+                file_dict.update(self._parse_folder_load_files(item.get('id')))
+            else :
+                
+                file_dict[item.get('id')] = item.get('name')
+                content = requests.get(
+                    ONE_DRIVE_ITEM_ENDPOINT+rf'/{item.get("id")}/content',
+                    headers=self._get_headers()).content
+                with open(TEMP_STORE_PATH / f'{item.get("name")}', 'wb')as f:
+                    f.write(content)
+        return file_dict
+    def _remove_content(self,folder_path):
+        folder = Path(folder_path)
+        for item in folder.glob('*'):
+            if item.is_file():
+                item.unlink()  
+            elif item.is_dir():
+                self.remove_content(item)  
+                item.rmdir() 
+
+    def load_data(self, folder_id:str):
+        if TEMP_STORE_PATH.exists():
+            self._remove_content(TEMP_STORE_PATH)
+        else : 
+            TEMP_STORE_PATH.mkdir(parents=True)
+        self._parse_folder_load_files(folder_id)
+        documents = SimpleDirectoryReader(input_dir = TEMP_STORE_PATH.resolve().__str__()).load_data()
+        self._remove_content(TEMP_STORE_PATH)
+        return documents
+    
