@@ -30,3 +30,8 @@ ONEDRIVE_LOGIN_EXPIRE_DURATION = 600
 TEMP_STORE_PATH = Path('./tmp_au4os42asx4fgj45mz9db4zj5r3xd7ghm/')
 GRAPH_API_ENDPOINT = 'https://graph.microsoft.com/v1.0'
 ONE_DRIVE_ITEM_ENDPOINT = GRAPH_API_ENDPOINT + r'/me/drive/items'
+
+ONEDRIVE_CREDENTIAL_DIR = Path(BASE_DIR/'CredentialHub'/'ms_credential')
+if not ONEDRIVE_CREDENTIAL_DIR.exists():
+    ONEDRIVE_CREDENTIAL_DIR.mkdir(parents=True)
+    

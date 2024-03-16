@@ -213,23 +213,30 @@ class OneDriveReader():
         access_token = self.access_token()
         return {'Authorization': 'Bearer '+ access_token['access_token']}
     
-    def _parse_folder_load_files(self, folder_id , recursive = True):
+    def _parse_folder_load_files(self,folder_id , recursive = True):
         response_file_info = requests.get(
                 ONE_DRIVE_ITEM_ENDPOINT+rf'/{folder_id}/children',
                 headers=self._get_headers()
             )
         file_dict = {}
+        # print(response_file_info.json())
         # display(response_file_info.json())
         for item in response_file_info.json().get('value'): 
             if item.get('folder') and recursive :
                 file_dict.update(self._parse_folder_load_files(item.get('id')))
-            else :
-                
-                file_dict[item.get('id')] = item.get('name')
+            elif item.get('shared') and item.get('shared').get('scope') == 'users':
+
+                metadata = {}
+                metadata['author'] = item['shared']['owner']['user']["displayName"]
+                metadata['onedrive_path'] = item.get('parentReference').get('path') + '/' + item.get('name')
+                metadata['created_at'] = datetime.fromisoformat( item['createdDateTime'][:-1])
+                metadata['updated_at'] = datetime.fromisoformat( item['lastModifiedDateTime'][:-1])
+                file_dict[item.get('id')] = metadata
                 content = requests.get(
                     ONE_DRIVE_ITEM_ENDPOINT+rf'/{item.get("id")}/content',
                     headers=self._get_headers()).content
-                with open(TEMP_STORE_PATH / f'{item.get("name")}', 'wb')as f:
+                file_extension = os.path.splitext(item.get("name"))[1]
+                with open(TEMP_STORE_PATH / f'{item.get("id")}{file_extension}', 'wb')as f:
                     f.write(content)
         return file_dict
     def _remove_content(self,folder_path):
@@ -246,8 +253,11 @@ class OneDriveReader():
             self._remove_content(TEMP_STORE_PATH)
         else : 
             TEMP_STORE_PATH.mkdir(parents=True)
-        self._parse_folder_load_files(folder_id)
-        documents = SimpleDirectoryReader(input_dir = TEMP_STORE_PATH.resolve().__str__()).load_data()
+        metadata  = self._parse_folder_load_files(folder_id)
+        
+        documents = SimpleDirectoryReader(input_dir = TEMP_STORE_PATH.resolve().__str__()
+                            file_metadata = lambda file_name:metadata[file_name.split('.')[0]]
+                                    ).load_data()
         self._remove_content(TEMP_STORE_PATH)
         return documents
     
