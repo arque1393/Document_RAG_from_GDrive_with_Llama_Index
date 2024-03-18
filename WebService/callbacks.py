@@ -7,7 +7,7 @@ from llama_index.llms.gemini import Gemini
 from custome_prompts import custom_prompt_template
 from document_processor import process_metadata
 from typing import Tuple
-
+from drive_utils import OneDriveReader
 
 def store_data_callback(username:str)-> callable:
     """This Function create a callback function to read google Drive Files and store data in vectoe database using ChromaVectorStoreIndex.
@@ -29,6 +29,8 @@ def store_data_callback(username:str)-> callable:
             print('Error occurs in Indexing', e)
             
     return callback 
+
+
         
 def get_answer(username:str, collection_name:str , question:str ) -> Tuple[str,dict]:
     """Ask Query using LLM and return response and Processed metadata """
@@ -40,3 +42,20 @@ def get_answer(username:str, collection_name:str , question:str ) -> Tuple[str,d
     response = query_engine.query(question)
     # print(response.metadata)    
     return (response.response,process_metadata(response.metadata))
+
+
+
+
+
+def store_data_from_onedrive(username:str, access_token:str):
+    """Read google Drive Files and Store in Vector Store """    
+    reader = OneDriveReader(username=username, access_token=access_token)
+    chroma_index = ChromaVectorStoreIndex(persist_dir=VECTOR_STORE_PATH/username, collection=username)
+    docs = reader.load_data('root')
+    if not docs:
+        raise Exception("No Datas is loaded")        
+    try:
+        nodes = process_document(docs)
+        _ = chroma_index.create_index(nodes=nodes)           
+    except Exception as e:
+        print('Error occurs in Indexing', e)

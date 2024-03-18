@@ -14,5 +14,8 @@ llama_index_drive_loader/
 *.ipynb
 *.db
 *token*
-.tmp/
+*tmp*
 demo*
+*.pem
+.tmp*
+.exe

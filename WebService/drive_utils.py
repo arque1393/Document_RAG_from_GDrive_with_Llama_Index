@@ -1,5 +1,5 @@
 # Basic Module 
-import os.path
+
 import datetime 
 import time 
 
@@ -7,11 +7,18 @@ import time
 from googleapiclient.errors import HttpError
 from pathlib import Path
 # for Retrieving data from Google Drive using Llama index 
-from constants import ( GOOGLE_DRIVE_ACTIVITY_PAGE_SIZE,MONITORING_TIME_DELAY)
+from constants import ( GOOGLE_DRIVE_ACTIVITY_PAGE_SIZE,
+                        ONE_DRIVE_ITEM_ENDPOINT,MONITORING_TIME_DELAY, TEMP_STORE_PATH, GDRIVE_ACCEPT_MIME_TYPES)
 from typing import Any,Optional,Tuple
 import re
 from db import models 
 
+## OneDrive Utilities import 
+
+import os
+from threading import Thread
+import requests
+from llama_index.core import SimpleDirectoryReader
 
 
 
@@ -60,56 +67,56 @@ def watch_drive_load_data(service, session, user_id, callbacks : callable ):
     """
     user_disable = session.query(models.User).filter_by(user_id=user_id).first().disabled
     print("Background Thread is started  ")
+    collection = session.query(models.Collection).filter_by(user_id=user_id).order_by(models.Collection.updated_at).first()
     while not user_disable:
-        collections = session.query(models.Collection).filter_by(user_id=user_id).order_by(models.Collection.updated_at).all()
-        for collection in collections : 
+        
             
-            current_time = datetime.datetime.now()
-            current_time_formate=current_time.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")+'+00:00'
-            previous_time_formate=collection.updated_at.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")+'+00:00'
+        current_time = datetime.datetime.now()
+        current_time_formate=current_time.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")+'+00:00'
+        previous_time_formate=collection.updated_at.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")+'+00:00'
+        
+        try:
             
-            try:
-                
-                results = service.activity().query(body={
-                "filter":f'time > "{previous_time_formate}" AND time < "{current_time_formate}"',
-                'ancestorName':f"items/{collection.collection_id}",
-                "pageSize": GOOGLE_DRIVE_ACTIVITY_PAGE_SIZE}).execute()
-                
-                activities = results.get('activities', [])
-                deleted_file_list=[]
-                file_list:list[str] = []
-                for activity in activities:
-                    if iter(activity['primaryActionDetail']).__next__() in reader_activity_list :
-                        file_list+=extract_file_ids(activity['targets'])
-                    if iter(activity['primaryActionDetail']).__next__() == remove_activity :
-                        deleted_file_list+=extract_file_ids(activity['targets'])
-                for item in file_list :
-                    if item in deleted_file_list:
-                        file_list.remove(item)
-                
-                file_list=list(set(file_list))
-            # print("documents lodes : ", callbacks(file_list))
-                if file_list:
-                    print('reading new files : ',file_list)
-                    try:
-                        callbacks(file_list,collection.collection_name)
-                        print('Reading Successful.')
-                    except Exception as e:
-                        print("Error Occurs while Reading")
-                        print(e)
-                    finally:
-                        print("Server is waiting for next update in google drive ")
-                collection.updated_at = current_time
-                session.commit()
-                session.refresh(collection)
-            # time.sleep(MONITORING_TIME_DELAY)
-            except Exception as e:
-                # print(f"Error on fetching information of from folder {collection.collection_name} \n\n:", e)
-                # print("Retrying.....")
-                # time.sleep(5)
-                # previous_time = current_time
-                # exit()
-                pass
+            results = service.activity().query(body={
+            "filter":f'time > "{previous_time_formate}" AND time < "{current_time_formate}"',
+            # 'ancestorName':f"items/{collection.collection_id}",
+            "pageSize": GOOGLE_DRIVE_ACTIVITY_PAGE_SIZE}).execute()
+            
+            activities = results.get('activities', [])
+            deleted_file_list=[]
+            file_list:list[str] = []
+            for activity in activities:
+                if iter(activity['primaryActionDetail']).__next__() in reader_activity_list :
+                    file_list+=extract_file_ids(activity['targets'])
+                if iter(activity['primaryActionDetail']).__next__() == remove_activity :
+                    deleted_file_list+=extract_file_ids(activity['targets'])
+            for item in file_list :
+                if item in deleted_file_list:
+                    file_list.remove(item)
+            
+            file_list=list(set(file_list))
+        # print("documents lodes : ", callbacks(file_list))
+            if file_list:
+                print('reading new files : ',file_list)
+                try:
+                    callbacks(file_list,collection.collection_name)
+                    print('Reading Successful.')
+                except Exception as e:
+                    print("Error Occurs while Reading")
+                    print(e)
+                finally:
+                    print("Server is waiting for next update in google drive ")
+            collection.updated_at = current_time
+            session.commit()
+            session.refresh(collection)
+        # time.sleep(MONITORING_TIME_DELAY)
+        except Exception as e:
+            # print(f"Error on fetching information of from folder {collection.collection_name} \n\n:", e)
+            # print("Retrying.....")
+            # time.sleep(5)
+            # previous_time = current_time
+            # exit()
+            pass
         # Checking Condition
         user_disable = session.query(models.User).filter_by(user_id=user_id).first().disabled
         
@@ -127,7 +134,7 @@ def drive_link_to_folder_name_and_id ( service, folder_link:str)-> Tuple[str,str
     return (str(folder_info['name']),folder_id)
     # return folder_link
 
-def read_drive_folder(service,folder_id,folder_name, callbacks, update_time:Optional[Any]=None):
+def read_drive_folder(service,collection_name, callbacks):
     """Watch Drive check if any changes happens or not.
     This Works only once If New File Uploaded or created or edited it extract the file ID and using callbacks store in to VectorStoreIndex
 
@@ -143,48 +150,86 @@ def read_drive_folder(service,folder_id,folder_name, callbacks, update_time:Opti
         update_time:str 
             If available then search activities after updated time 
     """
-    if not update_time:
-        update_time = datetime.datetime.now() - datetime.timedelta(days=365)
-    while True:
-        current_time = datetime.datetime.now()
-        current_time_formate=current_time.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")+'+00:00'
-        update_time_formate=update_time.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")+'+00:00'
+    try:    
+        results = service.files().list(
+            pageSize=1000,  # Adjust as per your requirement
+            fields="files(id, name, webViewLink, permissions)",
+            q=f"'me' in owners and visibility='anyoneWithLink' and mimeType in {str(GDRIVE_ACCEPT_MIME_TYPES)[1:-1]} ",
+            orderBy="modifiedTime desc"
+        ).execute()
+        files = results.get('files', [])        
+        public_file_ids = []
+        for file in files:
+            public_file_ids.append(file['id'])
+        if not public_file_ids:
+            return False 
+    except Exception as e : 
+        raise e
+    try : 
+        callbacks(public_file_ids,collection_name)
+    except Exception as e :
+        raise Exception (f'Callback running Error : {e}')
+    return True
+############################################################################################
+################################ One Drive Access Utilities ################################
+############################################################################################
+
+class OneDriveReader():
+    def __init__(self,username:str, access_token:str) -> None:
+        self.access_token = access_token
+        self.temp_store_path = TEMP_STORE_PATH/username
         
-        try:
-            results = service.activity().query(body={
-            "filter":f'time > "{update_time_formate}" AND time < "{current_time_formate}"',
-            'ancestorName':f"items/{folder_id}",
-            "pageSize": 2}).execute()
-            activities = results.get('activities', [])
-            deleted_file_list=[]
-            file_list:list[str] = []
-            for activity in activities:
-                if iter(activity['primaryActionDetail']).__next__() in reader_activity_list :
-                    file_list+=extract_file_ids(activity['targets'])
-                if iter(activity['primaryActionDetail']).__next__() == remove_activity :
-                    deleted_file_list+=extract_file_ids(activity['targets'])
-            for item in file_list :
-                if item in deleted_file_list:
-                    file_list.remove(item)
-            
-            file_list=list(set(file_list))
-            print("documents lodes : ", file_list)
-            if file_list:
-                print('reading new files : ',file_list)
-                try:
-                    callbacks(file_list,folder_name)
-                    print('Reading Successful.')
-                except Exception as e:
-                    print("Error Occurs while Reading")
-                    print(e)
-                finally:
-                    print("Server is waiting for next update in google drive ")
-        except HttpError as e:
-            if e.status_code == 500:
-                raise DriveFolderDoesNotExist()
-            else : 
-                raise Exception(f'{e}')
-        except Exception as e : 
-            raise  e
-        time.sleep(MONITORING_TIME_DELAY) 
-        break 
+    def _get_headers(self):
+        access_token = self.access_token
+        return {'Authorization': 'Bearer '+ access_token}
+    
+    def _parse_folder_load_files(self,folder_id , recursive = True):
+        response_file_info = requests.get(
+                ONE_DRIVE_ITEM_ENDPOINT+rf'/{folder_id}/children',
+                headers=self._get_headers()
+            )
+        file_dict = {}
+        # print(response_file_info.json())
+        # display(response_file_info.json())
+        for item in response_file_info.json().get('value'): 
+            if item.get('folder') and recursive :
+                file_dict.update(self._parse_folder_load_files(item.get('id')))
+            elif item.get('shared') and item.get('shared').get('scope') == 'users':
+
+                metadata = {}
+                metadata['author'] = item['shared']['owner']['user']["displayName"]
+                metadata['onedrive_path'] = item.get('parentReference').get('path') + '/' + item.get('name')
+                metadata['file_name'] = item.get('name')
+                metadata['created_at'] = datetime.datetime.fromisoformat( item['createdDateTime'][:-1]).strftime("%Y-%m-%d %H:%M:%S")
+                metadata['updated_at'] = datetime.datetime.fromisoformat( item['lastModifiedDateTime'][:-1]).strftime("%Y-%m-%d %H:%M:%S")
+                file_dict[item.get('id')] = metadata
+                content = requests.get(
+                    ONE_DRIVE_ITEM_ENDPOINT+rf'/{item.get("id")}/content',
+                    headers=self._get_headers()).content
+                file_extension = os.path.splitext(item.get("name"))[1]
+                with open(self.temp_store_path / f'{item.get("id")}{file_extension}', 'wb')as f:
+                    f.write(content)
+        return file_dict
+    
+    def _remove_content(self,folder_path):
+        folder = Path(folder_path)
+        for item in folder.glob('*'):
+            if item.is_file():
+                item.unlink()  
+            elif item.is_dir():
+                self._remove_content(item)  
+                item.rmdir() 
+
+    def load_data(self,folder_id:str):
+        if self.temp_store_path.exists():
+            self._remove_content(self.temp_store_path)
+        else : 
+            self.temp_store_path.mkdir(parents=True)
+        metadata  = self._parse_folder_load_files(folder_id)
+        print(metadata)
+        documents = SimpleDirectoryReader(input_dir = self.temp_store_path.resolve().__str__(),
+                            file_metadata = lambda file_name: metadata[os.path.splitext(os.path.basename(file_name))[0]]
+                                    ).load_data()
+        self._remove_content(self.temp_store_path)
+        return documents
+    

@@ -26,7 +26,7 @@ def save_token(token):
     with open('token.b','wb')as f:
         f.write(encrypted_token)
         
-def send_query(question,collection_name):
+def send_query(question):
     try : 
         access_token = get_token()
     except: 
@@ -40,7 +40,6 @@ def send_query(question,collection_name):
         'Content-Type': 'application/json'
     }
     data = {
-        "collection_name": str(collection_name),
         "question":str(question)
     }
     response = requests.post(url, headers=headers, json=data)
@@ -130,4 +129,29 @@ def logout():
         'Authorization': f'Bearer {token}'
     }
     response = requests.post(url, headers=headers)
-    
+
+
+def connect_to_google():  
+    try : 
+        access_token = get_token()    
+    except: 
+        raise NotAuthenticatedException()
+    url = 'http://127.0.0.1:8000/user/connect/google_drive'
+    headers = {
+        'accept': 'application/json',
+        'Authorization': f'Bearer {access_token}'
+    }
+    response = requests.post(url, headers=headers)
+    return response.json()
+def connect_to_onedrive(end_point=""):
+    try : 
+        access_token = get_token()    
+    except: 
+        raise NotAuthenticatedException()
+    url = f'http://127.0.0.1:8000/user/connect/one_drive{end_point}'
+    headers = {
+        'accept': 'application/json',
+        'Authorization': f'Bearer {access_token}'
+    }
+    response = requests.post(url, headers=headers)
+    return response.json()

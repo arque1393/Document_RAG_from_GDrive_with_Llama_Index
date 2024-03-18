@@ -9,10 +9,17 @@ from cryptography.fernet import Fernet
 from pathlib import Path 
 import json
 from typing import Annotated,Any
-
 from db.setup import get_session, Base
 from db import models 
 from sqlalchemy.orm import Session
+import webbrowser
+import msal
+
+import time 
+from threading import Thread
+GRAPH_API_ENDPOINT = 'https://graph.microsoft.com/v1.0'
+SCOPES = ['Files.Read']
+CLIENT_ID = '8c849b5d-cd74-4e8f-adc9-d7534074b99b'
 
 
 # Google Authentication Service 
@@ -21,7 +28,8 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-from constants import  JWT_AUTH_SECRET_KEY , ALGORITHM, GOOGLE_CLIENT_SECRET, DRIVE_API_SCOPES, FERNET_KEY
+from constants import  (JWT_AUTH_SECRET_KEY , ALGORITHM, ONEDRIVE_LOGIN_EXPIRE_DURATION,
+    GOOGLE_CLIENT_SECRET, DRIVE_API_SCOPES, ONEDRIVE_SCOPE,FERNET_KEY,ONEDRIVE_CREDENTIAL_DIR)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -101,9 +109,9 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)],session
 
 
 async def get_current_active_user(current_user: Annotated[User, Depends(get_current_user)]):
-    """Return Users if only user is active"""
-    if current_user.disabled:
-        raise HTTPException(status_code=400, detail="Inactive user")
+    # """Return Users if only user is active"""
+    # if current_user.disabled:
+    #     raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
 
@@ -157,4 +165,140 @@ def google_auth(username):
     
     return (drive_service,drive_activity_service)
 
+
+
+
+
+
+
+class MSAuth():
+    def __init__(self, client_id) -> None:
+        self.client_id = client_id
+        self.user_token = None
+        self.__token_response = None
+        self.__access_token = None
+        self.__refresh_token = None 
+    @property
+    def _token_response(self):
+        start_time = time.time()
+        while True : 
+            if time.time() - start_time > ONEDRIVE_LOGIN_EXPIRE_DURATION  : 
+                raise Exception("Access Token is not fount")
+            if not self.__token_response :
+                continue 
+            break
+        return self.__token_response
+    @property
+    def _access_token(self):
+        start_time = time.time()
+        while True : 
+            if time.time() - start_time > ONEDRIVE_LOGIN_EXPIRE_DURATION  : 
+                raise Exception("Access Token is not fount")
+            if not self.__access_token :
+                continue 
+            break
+        return self.__access_token
+    @property
+    def _refresh_tokene(self):
+        start_time = time.time()
+        while True : 
+            if time.time() - start_time > ONEDRIVE_LOGIN_EXPIRE_DURATION  : 
+                raise Exception("Access Token is not fount")
+            if not self.__refresh_token :
+                continue 
+            break
+        return self.__refresh_token
+    # Done 
+    def _write_token(self, token_path:Path, serialized_token_cache:str):
         
+        cipher_suite = Fernet(FERNET_KEY)
+        with open(token_path, "wb") as token:
+            encrypted_token = cipher_suite.encrypt(serialized_token_cache.encode())
+            token.write(encrypted_token)  
+    def _read_token(self,token_path):
+        cipher_suite = Fernet(FERNET_KEY) 
+        if not (token_path).exists():
+            raise Exception("Token File is not found")
+        with open(token_path, "rb") as token:
+            encrypted_token = token.read()
+            serialized_token_cache = cipher_suite.decrypt(encrypted_token).decode()
+        return serialized_token_cache
+        
+    def _save_token(self,client,flow,token_cache, token_path):        
+        webbrowser.open('https://microsoft.com/devicelogin')
+        token_response = client.acquire_token_by_device_flow(flow)
+        self.__token_response =  token_response
+        self.__access_token = token_response['access_token']
+        self.__refresh_token = token_response['refresh_token']
+        self._write_token(token_path,token_cache.serialize() )
+
+    def get_token(self,username:str):
+        token_dir =  ONEDRIVE_CREDENTIAL_DIR/username
+        if not token_dir.exists():
+            token_dir.mkdir(parents=True)
+        access_token_path = ONEDRIVE_CREDENTIAL_DIR/username/'token.b'
+        token_cache = msal.SerializableTokenCache()
+        if access_token_path.exists():
+            token_str = self._read_token(access_token_path)
+            token_cache.deserialize(token_str)
+            token_dict = json.loads(token_str)
+            access_token = token_dict['AccessToken']
+            token_expiration = datetime.fromtimestamp(
+                int(access_token[iter(access_token).__next__()]['expires_on']))
+            if datetime.now() > token_expiration:
+                try : 
+                    client = msal.PublicClientApplication(client_id=CLIENT_ID,token_cache=token_cache)
+                    refresh_token =  token_dict['RefreshToken']
+                    refresh_token_secret = refresh_token[iter(refresh_token).__next__()]['secret']
+                    token_response = client.acquire_token_by_refresh_token(refresh_token_secret, SCOPES)
+                    self._write_token(token_cache.serialize())                    
+                    self.__access_token = token_response['access_token']   
+                    self.__access_token = token_response['refresh_token']
+                    return None 
+                except:
+                    pass
+            else : 
+                self.__access_token = access_token[iter(access_token).__next__()]['secret']
+                refresh_token = token_dict['RefreshToken']
+                self.__refresh_token = refresh_token[iter(refresh_token).__next__()]['secret']
+                return None
+            
+    
+        # token_cache = msal.SerializableTokenCache()
+        client = msal.PublicClientApplication(client_id=self.client_id, token_cache=token_cache)
+
+        if accounts:= client.get_accounts():
+            token_response = client.acquire_token_silent(ONEDRIVE_SCOPE, accounts[0])
+            if 'access_token' in token_response:
+                self.__token_response = token_response            
+                self.__access_token = token_response['access_token']   
+            # self.__access_token = token_response['refresh_token']
+                return None
+        
+        flow = client.initiate_device_flow(scopes=ONEDRIVE_SCOPE)
+        thread = Thread(target=(lambda:self._save_token(client,flow,token_cache,access_token_path)))
+        thread.start()
+        time.sleep(0.1)        
+        return flow.get('user_code')
+        
+    
+
+
+
+
+
+
+    
+        
+    
+# if __name__=='__main__':
+#     client_id  =  '8c849b5d-cd74-4e8f-adc9-d7534074b99b'
+#     # share_link = 'https://1drv.ms/f/s!Aj2Nbw_0FL8HjagQQk9_gLSe6ZI9Cg?e=PRPUjd'
+#     # folder_id = extract_id_from_one_drive_link(share_link)
+#     ms_auth = MSAuth(client_id)
+#     user_code = ms_auth.get_token()
+#     print(user_code)
+#     access_token = ms_auth._access_token
+#     print(access_token)
+#     # docs = ms_auth.load_data(folder_id)
+#     # print (docs)
