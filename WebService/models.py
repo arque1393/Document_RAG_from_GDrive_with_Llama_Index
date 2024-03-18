@@ -35,5 +35,5 @@ class DriveFolderInfo(BaseModel):
     
     
 class Query (BaseModel):
-    collection_name:str
+    # collection_name:str
     question:str

@@ -109,9 +109,9 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)],session
 
 
 async def get_current_active_user(current_user: Annotated[User, Depends(get_current_user)]):
-    """Return Users if only user is active"""
-    if current_user.disabled:
-        raise HTTPException(status_code=400, detail="Inactive user")
+    # """Return Users if only user is active"""
+    # if current_user.disabled:
+    #     raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
 
@@ -264,19 +264,20 @@ class MSAuth():
                 return None
             
     
-        
-        token_cache = msal.SerializableTokenCache()
+        # token_cache = msal.SerializableTokenCache()
         client = msal.PublicClientApplication(client_id=self.client_id, token_cache=token_cache)
 
         if accounts:= client.get_accounts():
             token_response = client.acquire_token_silent(ONEDRIVE_SCOPE, accounts[0])
             self.__token_response = token_response
+            self.__access_token = token_response['access_token']   
+            # self.__access_token = token_response['refresh_token']
+            return None
         else:
             flow = client.initiate_device_flow(scopes=ONEDRIVE_SCOPE)
             thread = Thread(target=(lambda:self._save_token(client,flow,token_cache,access_token_path)))
             thread.start()
-            time.sleep(0.1)
-        if flow : 
+            time.sleep(0.1)        
             return flow.get('user_code')
         
     
@@ -289,14 +290,14 @@ class MSAuth():
     
         
     
-if __name__=='__main__':
-    client_id  =  '8c849b5d-cd74-4e8f-adc9-d7534074b99b'
-    # share_link = 'https://1drv.ms/f/s!Aj2Nbw_0FL8HjagQQk9_gLSe6ZI9Cg?e=PRPUjd'
-    # folder_id = extract_id_from_one_drive_link(share_link)
-    ms_auth = MSAuth(client_id)
-    user_code = ms_auth.get_token()
-    print(user_code)
-    access_token = ms_auth._access_token
-    print(access_token)
-    # docs = ms_auth.load_data(folder_id)
-    # print (docs)
+# if __name__=='__main__':
+#     client_id  =  '8c849b5d-cd74-4e8f-adc9-d7534074b99b'
+#     # share_link = 'https://1drv.ms/f/s!Aj2Nbw_0FL8HjagQQk9_gLSe6ZI9Cg?e=PRPUjd'
+#     # folder_id = extract_id_from_one_drive_link(share_link)
+#     ms_auth = MSAuth(client_id)
+#     user_code = ms_auth.get_token()
+#     print(user_code)
+#     access_token = ms_auth._access_token
+#     print(access_token)
+#     # docs = ms_auth.load_data(folder_id)
+#     # print (docs)
