@@ -3,28 +3,11 @@ from streamlit_extras.switch_page_button import switch_page
 from request_manager import get_collections,send_query
 from request_manager import logout
 from request_manager import create_collection
-
+from request_manager import connect_to_google , connect_to_onedrive
 import json
 
 st.set_page_config(page_title= "Intelegent Document Retriever")
 st.title("Home Page")
-
-st.subheader("Create Collection ")
-
-folder_link = st.text_input("Enter Folder Link")
-
-if st.button("Add Folder ID as Collection "):
-    try:
-        response = create_collection(folder_link)
-    except Exception as e: 
-        st.error(f'{e}')
-        response = None
-    if response:
-        try : 
-            st.success(response['message'])
-        except:
-            st.error(response['detail'])
-
 
 
 
@@ -32,30 +15,50 @@ st.subheader("Question Answer")
 
 question = st.text_input("Enter Your Question")
 st.write("Click to Get Collection List to View Your Folder Collection ")
-if st.button("Get Collection List"):
-    try:
-        collection_list = get_collections()
-    except Exception as e:
-        st.error(f'{e}')
-        collection_list = None
-    if collection_list:
-        st.write("-"*80)
-        st.write("Collection List")
-        if collection_list:
-            for collection in collection_list :
-                st.write(collection)
-            st.write("-"*80)
-        else : 
-            st.write("No Collection is available Create new one")
+
         
-    
-collection_name = st.text_input("Enter Collection Name")
+button_google = st.sidebar.button("Connect to Google Drive")
+button_one_drive = st.sidebar.button("Connect to One Drive")    
+read_one_derive = st.sidebar.button("Read _One Drive Data")  
+if button_google :
+    res = connect_to_google()
+    try: 
+        mes  = res['message']
+        st.success(mes)
+    except :
+        mes  = res['detail']
+        st.error(mes)
+        
+if button_one_drive:
+    res = connect_to_onedrive()
+    try: 
+        # st.write(res)
+        code  = res['user_code']
+        st.sidebar.write(f"Code is {code}")
+        res = connect_to_onedrive('/verify')
+        try :
+            mes  = res['message']
+            st.success(mes)
+        except:
+            mes  = res['detail']
+            st.error(mes)
+    except:
+        try :
+            mes  = res['message']
+            st.success(mes)
+        except:
+            mes  = res['detail']
+            st.error(mes)
 
-
-if st.button("Submit Query"):
-    st.write("Selected Collection ", collection_name )
+if read_one_derive :
+    res = connect_to_onedrive('/read')
     try:
-        response = send_query(question,collection_name)
+        st.success(res['message'])
+    except:
+        st.error(res['detail'])
+if st.button("Submit Query"):
+    try:
+        response = send_query(question)
     except Exception as e:
         st.error(f'{e}')
         response = None

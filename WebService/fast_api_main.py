@@ -146,7 +146,7 @@ async def read_users_me(
 @app.post('/user/connect/google_drive')
 async def connect_google_drive (current_user: Annotated[User, Depends(get_current_active_user)],
                                 background_task:BackgroundTasks,session: Session = Depends(get_session)):
-    response:dict ={'message': ""}
+    response:dict ={'message': "Already Connected"}
     
     try : 
         drive_service,drive_activity_service  = google_auth(current_user.username)
@@ -157,9 +157,9 @@ async def connect_google_drive (current_user: Annotated[User, Depends(get_curren
     
     if not session.query(models.Collection).filter_by(user_id=current_user.user_id).first():  
         if not read_drive_folder(drive_service,current_user.username, callbacks=store_data_callback(current_user.username)):
-            response["message"]+= "Connected to Drive, "
+            response["message"] = "Connected to Drive, "
         else :
-            response["message"]+= "Connected to Drive, No new data found, "
+            response["message"] = "Connected to Drive, No new data found, "
         new_collection =  models.Collection(collection_id=current_user.username,
                                         collection_name=current_user.username, user_id=current_user.user_id,
                                         created_at = datetime.now(), updated_at =  datetime.now()) 

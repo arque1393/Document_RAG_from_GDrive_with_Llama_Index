@@ -269,16 +269,17 @@ class MSAuth():
 
         if accounts:= client.get_accounts():
             token_response = client.acquire_token_silent(ONEDRIVE_SCOPE, accounts[0])
-            self.__token_response = token_response
-            self.__access_token = token_response['access_token']   
+            if 'access_token' in token_response:
+                self.__token_response = token_response            
+                self.__access_token = token_response['access_token']   
             # self.__access_token = token_response['refresh_token']
-            return None
-        else:
-            flow = client.initiate_device_flow(scopes=ONEDRIVE_SCOPE)
-            thread = Thread(target=(lambda:self._save_token(client,flow,token_cache,access_token_path)))
-            thread.start()
-            time.sleep(0.1)        
-            return flow.get('user_code')
+                return None
+        
+        flow = client.initiate_device_flow(scopes=ONEDRIVE_SCOPE)
+        thread = Thread(target=(lambda:self._save_token(client,flow,token_cache,access_token_path)))
+        thread.start()
+        time.sleep(0.1)        
+        return flow.get('user_code')
         
     
 
