@@ -271,7 +271,9 @@ class MSAuth():
             token_response = client.acquire_token_silent(ONEDRIVE_SCOPE, accounts[0])
             if 'access_token' in token_response:
                 self.__token_response = token_response            
-                self.__access_token = token_response['access_token']   
+                self.__access_token = token_response['access_token'] 
+                refresh_token = token_dict['RefreshToken']
+                self.__refresh_token = refresh_token[iter(refresh_token).__next__()]['secret']
             # self.__access_token = token_response['refresh_token']
                 return None
         
@@ -280,25 +282,3 @@ class MSAuth():
         thread.start()
         time.sleep(0.1)        
         return flow.get('user_code')
-        
-    
-
-
-
-
-
-
-    
-        
-    
-# if __name__=='__main__':
-#     client_id  =  '8c849b5d-cd74-4e8f-adc9-d7534074b99b'
-#     # share_link = 'https://1drv.ms/f/s!Aj2Nbw_0FL8HjagQQk9_gLSe6ZI9Cg?e=PRPUjd'
-#     # folder_id = extract_id_from_one_drive_link(share_link)
-#     ms_auth = MSAuth(client_id)
-#     user_code = ms_auth.get_token()
-#     print(user_code)
-#     access_token = ms_auth._access_token
-#     print(access_token)
-#     # docs = ms_auth.load_data(folder_id)
-#     # print (docs)

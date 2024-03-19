@@ -7,9 +7,9 @@ import time
 from googleapiclient.errors import HttpError
 from pathlib import Path
 # for Retrieving data from Google Drive using Llama index 
-from constants import ( GOOGLE_DRIVE_ACTIVITY_PAGE_SIZE,
+from constants import ( GOOGLE_DRIVE_ACTIVITY_PAGE_SIZE,MS_CLIENT_ID,
                         ONE_DRIVE_ITEM_ENDPOINT,MONITORING_TIME_DELAY, TEMP_STORE_PATH, GDRIVE_ACCEPT_MIME_TYPES)
-from typing import Any,Optional,Tuple
+from typing import Any,Optional,Tuple,Iterable
 import re
 from db import models 
 
@@ -20,7 +20,7 @@ from threading import Thread
 import requests
 from llama_index.core import SimpleDirectoryReader
 
-
+from auth_utils import MSAuth
 
 class DriveFolderDoesNotExist(Exception):
     def __init__(self, message = "Unable to find the folder ID in your Google Drive Account.\n Do not enter shared folder's link.") -> None:
@@ -174,6 +174,13 @@ def read_drive_folder(service,collection_name, callbacks):
 ################################ One Drive Access Utilities ################################
 ############################################################################################
 
+
+
+
+
+
+
+
 class OneDriveReader():
     def __init__(self,username:str, access_token:str) -> None:
         self.access_token = access_token
@@ -182,26 +189,25 @@ class OneDriveReader():
     def _get_headers(self):
         access_token = self.access_token
         return {'Authorization': 'Bearer '+ access_token}
-    
+    def _extract_metadata(self, item):
+        metadata = {}
+        metadata['author'] = item['shared']['owner']['user']["displayName"]
+        metadata['onedrive_path'] = item.get('parentReference').get('path') + '/' + item.get('name')
+        metadata['file_name'] = item.get('name')
+        metadata['created_at'] = datetime.datetime.fromisoformat( item['createdDateTime'][:-1]).strftime("%Y-%m-%d %H:%M:%S")
+        metadata['updated_at'] = datetime.datetime.fromisoformat( item['lastModifiedDateTime'][:-1]).strftime("%Y-%m-%d %H:%M:%S")
+        return metadata
     def _parse_folder_load_files(self,folder_id , recursive = True):
         response_file_info = requests.get(
                 ONE_DRIVE_ITEM_ENDPOINT+rf'/{folder_id}/children',
                 headers=self._get_headers()
             )
         file_dict = {}
-        # print(response_file_info.json())
-        # display(response_file_info.json())
         for item in response_file_info.json().get('value'): 
             if item.get('folder') and recursive :
                 file_dict.update(self._parse_folder_load_files(item.get('id')))
             elif item.get('shared') and item.get('shared').get('scope') == 'users':
-
-                metadata = {}
-                metadata['author'] = item['shared']['owner']['user']["displayName"]
-                metadata['onedrive_path'] = item.get('parentReference').get('path') + '/' + item.get('name')
-                metadata['file_name'] = item.get('name')
-                metadata['created_at'] = datetime.datetime.fromisoformat( item['createdDateTime'][:-1]).strftime("%Y-%m-%d %H:%M:%S")
-                metadata['updated_at'] = datetime.datetime.fromisoformat( item['lastModifiedDateTime'][:-1]).strftime("%Y-%m-%d %H:%M:%S")
+                metadata = self._extract_metadata(item)
                 file_dict[item.get('id')] = metadata
                 content = requests.get(
                     ONE_DRIVE_ITEM_ENDPOINT+rf'/{item.get("id")}/content',
@@ -210,7 +216,6 @@ class OneDriveReader():
                 with open(self.temp_store_path / f'{item.get("id")}{file_extension}', 'wb')as f:
                     f.write(content)
         return file_dict
-    
     def _remove_content(self,folder_path):
         folder = Path(folder_path)
         for item in folder.glob('*'):
@@ -219,17 +224,94 @@ class OneDriveReader():
             elif item.is_dir():
                 self._remove_content(item)  
                 item.rmdir() 
-
-    def load_data(self,folder_id:str):
+    def _load_files_from_file_ids(self,file_ids:str):
+        file_dict={}
+        for file_id in file_ids :
+            response_file_info = requests.get(
+                ONE_DRIVE_ITEM_ENDPOINT+rf'/{file_id}/',
+                headers=self._get_headers())
+            item = response_file_info.json()
+            metadata = self._extract_metadata(item)
+            file_dict[item.get('id')] = metadata
+            content = requests.get(
+                ONE_DRIVE_ITEM_ENDPOINT+rf'/{item.get("id")}/content',
+                headers=self._get_headers()).content
+            file_extension = os.path.splitext(item.get("name"))[1]
+            if not self.temp_store_path.exists():
+                self.temp_store_path.mkdir(parents=True)
+            with open(self.temp_store_path / f'{item.get("id")}{file_extension}', 'wb')as f:
+                f.write(content)
+        
+        return file_dict
+            
+    def load_data(self,folder_id:str|None =None, file_ids:Iterable[str]|None =None):
         if self.temp_store_path.exists():
             self._remove_content(self.temp_store_path)
         else : 
             self.temp_store_path.mkdir(parents=True)
-        metadata  = self._parse_folder_load_files(folder_id)
-        print(metadata)
+        metadata={}
+        
+        if folder_id:
+            metadata.update( self._parse_folder_load_files(folder_id))
+        elif file_ids:
+            metadata.update( self._load_files_from_file_ids(file_ids))
+        else: raise Exception("folder_id and file_ids both can not be empty ")
+        
+        # print(metadata)
         documents = SimpleDirectoryReader(input_dir = self.temp_store_path.resolve().__str__(),
-                            file_metadata = lambda file_name: metadata[os.path.splitext(os.path.basename(file_name))[0]]
-                                    ).load_data()
+                            file_metadata = lambda file_name: metadata[os.path.splitext(os.path.basename(file_name))[0]]).load_data()
         self._remove_content(self.temp_store_path)
         return documents
     
+
+
+
+
+### Define function to check Drive Updates
+def watch_one_drive_load_data(session, user_name, user_id, callbacks : callable ):
+    ms_auth = MSAuth(MS_CLIENT_ID)
+    if ms_auth.get_token(user_name):
+        user = session.query(models.User).filter_by(user_id=user_id).first()
+        user.onedrive_disabled = True
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+    activity_end_point = "" # TODO
+    headers={'Authorization': 'Bearer '+ ms_auth.access_token}
+    user_disable = session.query(models.User).filter_by(user_id=user_id).first().disabled
+    print("Background Thread is started  ")
+    collection = session.query(models.Collection).filter_by(user_id=user_id).order_by(models.Collection.updated_at).first()
+    while not user_disable:
+        current_time = datetime.datetime.now()
+        current_time_formate=current_time.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+        previous_time_formate=collection.one_drive_updated_at.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'        
+        try:            
+            filter_query = f"lastModifiedDateTime lt {current_time_formate} and lastModifiedDateTime gt {previous_time_formate} "
+            # Parameters for the request
+            file_ids =[]
+            params = {'$filter': filter_query}
+            response  = requests.get(activity_end_point,params=params, headers=headers).json()
+            try:
+                file_ids =[activity.get("id")for activity in response['value'] ]
+            except:
+                raise Exception(str(response))
+            file_list=list(set(file_ids))
+        # print("documents lodes : ", callbacks(file_list))
+            if file_list:
+                print('reading new files : ',file_list)
+                try:
+                    callbacks(file_list,collection.collection_name)
+                    print('Reading Successful.')
+                except Exception as e:
+                    print("Error Occurs while Reading")
+                    print(e)
+                finally:
+                    print("Server is waiting for next update in google drive ")
+            collection.one_drive_updated_at = current_time
+            session.commit()
+            session.refresh(collection)
+
+        except Exception as e:
+            pass
+        user_disable = session.query(models.User).filter_by(user_id=user_id).first().disabled
+        

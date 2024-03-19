@@ -25,4 +25,5 @@ class Collection(Base):
     user_id =  Column(Integer, ForeignKey('user.user_id'), nullable=False)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now())
+    one_drive_updated_at = Column(DateTime, default=func.now())
     user = relationship('User', back_populates='collection')
