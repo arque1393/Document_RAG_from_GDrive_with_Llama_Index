@@ -61,7 +61,7 @@ def watch_drive_load_data(service, session, user_id, callbacks : callable ):
             Use to fetch Drive activity Information 
         session : FastAPI SessionLocal object : 
             Use to access specific users and collections. and also update the time. 
-        user_if : str
+        user_id : str
             The id of that specific user  
         callbacks (callable): the function that store the file content in Vector Database
     """
@@ -174,6 +174,8 @@ def read_drive_folder(service,collection_name, callbacks):
 
 
 class OneDriveReader():
+    ''' Approximate Replicate of Llama Index's OneDriveLoader 
+    '''
     def __init__(self,username:str, access_token:str) -> None:
         self.access_token = access_token
         self.temp_store_path = TEMP_STORE_PATH/username
@@ -261,6 +263,19 @@ class OneDriveReader():
 
 ### Define function to check Drive Updates
 def watch_one_drive_load_data(session, user_name, user_id, callbacks : callable ):
+    """Watch Drive check if any changes happens or not.
+    This Works in a loop controlled by the db.models.User.disabled parameter. 
+    If New File Uploaded or created or edited it extract the file ID and using callbacks store in to VectorStoreIndex
+
+    Args:
+        service : GoogleDriveService or Resource object  :
+            Use to fetch Drive activity Information 
+        session : FastAPI SessionLocal object : 
+            Use to access specific users and collections. and also update the time. 
+        user_id : str
+            The id of that specific user  
+        callbacks (callable): the function that store the file content in Vector Database
+    """
     ms_auth = MSAuth(MS_CLIENT_ID)
     if ms_auth.get_token(user_name):
         user = session.query(models.User).filter_by(user_id=user_id).first()

@@ -35,27 +35,23 @@ if button_one_drive:
         # st.write(res)
         code  = res['user_code']
         st.sidebar.write(f"Code is {code}")
+    except : 
+        pass
+    try :
         res = connect_to_onedrive('/verify')
-        try :
-            mes  = res['message']
-            st.success(mes)
-        except:
-            mes  = res['detail']
-            st.error(mes)
+        mes  = res['message']
+        st.success(mes)
     except:
-        try :
-            mes  = res['message']
-            st.success(mes)
-        except:
-            mes  = res['detail']
-            st.error(mes)
+        mes  = res['detail']
+        st.error(mes)
 
-if read_one_derive :
-    res = connect_to_onedrive('/read')
-    try:
-        st.success(res['message'])
-    except:
-        st.error(res['detail'])
+
+# if read_one_derive :
+#     res = connect_to_onedrive('/read')
+#     try:
+#         st.success(res['message'])
+#     except:
+#         st.error(res['detail'])
 if st.button("Submit Query"):
     try:
         response = send_query(question)

@@ -184,6 +184,7 @@ async def question_and_answer(current_user: Annotated[User, Depends(get_current_
 @app.post("/user/disable")
 async def question_and_answer(current_user: Annotated[User, Depends(get_current_active_user)], session:Session=Depends(get_session) ):
     current_user.disabled = True 
+    current_user.one_drive_disabled = True 
     session.commit()
     session.refresh(current_user)
     return {"message":"Logout Success"}

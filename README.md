@@ -43,24 +43,27 @@
     - Checking Changes are available or not 
     - If available read files that are changed 
     - This loop is running the background task of FastAPI for each User while they are active 
-4. Process data to extract features 
-5. Integrating ChromaDB with llama_index's VectorStoreIndex 
-6. Integrate Gemini to retrieve data 
-7. Implement a frontend with Streamlit and Request library to manage API Requests  
+6. Try to Implement One Drive Monitoring System
+    - Does not Work Properly till now 
+7. Process data to extract features 
+8. Integrating ChromaDB with llama_index's VectorStoreIndex 
+9. Integrate Gemini to retrieve data 
+10. Implement a frontend with Streamlit and Request library to manage API Requests  
 
 
 
 ### API End Points 
-Method | Endpoints         |  Function          
--------|-------------------|------------------------------
-GET    | /user             |  Get Current User 
-POST   | /user             |  Create
-POST   | /token            |  Login For Access Token
-GET    | /user/collections |  Get Collection
-POST   | /user/collections |  Add Collection
-POST   | /user/query       |  Question And Answer
-POST   | /user/disable     |  Logout
--------|-------------------|----------------------------
+Method | Endpoints                      |  Function          
+-------|--------------------------------|------------------------------
+GET    | /user                          |  Get Current User 
+POST   | /user                          |  Create
+POST   | /token                         |  Login For Access Token
+POST   | /user/connect/google_drive     |  Connect To Google Drive
+POST   | /user/connect/one_drive        |  Connect to one Drive 
+POST   | /user/connect/one_drive/verify |  Verify and start background Pipeline 
+POST   | /user/query                    |  Question And Answer
+POST   | /user/disable                  |  Logout
+-------|--------------------------------|------------------------------
 
 
 
