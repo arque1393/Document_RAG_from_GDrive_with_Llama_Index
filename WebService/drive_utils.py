@@ -173,12 +173,6 @@ def read_drive_folder(service,collection_name, callbacks):
 ############################################################################################
 
 
-
-
-
-
-
-
 class OneDriveReader():
     def __init__(self,username:str, access_token:str) -> None:
         self.access_token = access_token
@@ -190,10 +184,10 @@ class OneDriveReader():
     def _extract_metadata(self, item):
         metadata = {}
         metadata['author'] = item['shared']['owner']['user']["displayName"]
-        metadata['onedrive_path'] = item.get('parentReference').get('path') + '/' + item.get('name')
-        metadata['file_name'] = item.get('name')
-        metadata['created_at'] = datetime.datetime.fromisoformat( item['createdDateTime'][:-1]).strftime("%Y-%m-%d %H:%M:%S")
-        metadata['updated_at'] = datetime.datetime.fromisoformat( item['lastModifiedDateTime'][:-1]).strftime("%Y-%m-%d %H:%M:%S")
+        metadata['file_path'] = item.get('parentReference').get('path') + '/' + item.get('name')
+        metadata['file name'] = item.get('name')
+        metadata['created at'] = datetime.datetime.fromisoformat( item['createdDateTime'][:-1]).strftime("%Y-%m-%d %H:%M:%S")
+        metadata['modified at'] = datetime.datetime.fromisoformat( item['lastModifiedDateTime'][:-1]).strftime("%Y-%m-%d %H:%M:%S")
         return metadata
     def _parse_folder_load_files(self,folder_id , recursive = True):
         response_file_info = requests.get(
