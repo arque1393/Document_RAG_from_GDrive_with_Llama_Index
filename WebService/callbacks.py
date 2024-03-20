@@ -47,13 +47,18 @@ def get_answer(username:str, collection_name:str , question:str ) -> Tuple[str,d
 
 
 
-def store_data_from_onedrive(username:str, access_token:str):
+def store_data_from_onedrive(username:str, access_token:str, file_list=None, folder_id = None):
     """Read google Drive Files and Store in Vector Store """    
     reader = OneDriveReader(username=username, access_token=access_token)
     chroma_index = ChromaVectorStoreIndex(persist_dir=VECTOR_STORE_PATH/username, collection=username)
-    docs = reader.load_data('root')
+    if file_list:
+        docs = reader.load_data(file_ids=file_list)
+    elif folder_id:
+        docs = reader.load_data(folder_id=folder_id)
+    else:
+        docs = reader.load_data(folder_id='root')
     if not docs:
-        raise Exception("No Datas is loaded")        
+        raise Exception("No Data is loaded")        
     try:
         nodes = process_document(docs)
         _ = chroma_index.create_index(nodes=nodes)           

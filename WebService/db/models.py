@@ -15,6 +15,7 @@ class User(Base):
     email = Column(String(100),unique=True, index= True, nullable= False )
     _password_hash = Column(String(200), nullable=False)
     disabled = Column(Boolean, default=True)
+    one_drive_disabled = Column(Boolean, default=True)
     collection = relationship('Collection', back_populates='user')
 
 class Collection(Base):

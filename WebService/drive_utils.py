@@ -7,7 +7,7 @@ import time
 from googleapiclient.errors import HttpError
 from pathlib import Path
 # for Retrieving data from Google Drive using Llama index 
-from constants import ( GOOGLE_DRIVE_ACTIVITY_PAGE_SIZE,MS_CLIENT_ID,
+from constants import ( GOOGLE_DRIVE_ACTIVITY_PAGE_SIZE,MS_CLIENT_ID,GRAPH_API_ENDPOINT,
                         ONE_DRIVE_ITEM_ENDPOINT,MONITORING_TIME_DELAY, TEMP_STORE_PATH, GDRIVE_ACCEPT_MIME_TYPES)
 from typing import Any,Optional,Tuple,Iterable
 import re
@@ -158,9 +158,7 @@ def read_drive_folder(service,collection_name, callbacks):
             orderBy="modifiedTime desc"
         ).execute()
         files = results.get('files', [])        
-        public_file_ids = []
-        for file in files:
-            public_file_ids.append(file['id'])
+        public_file_ids = [file['id'] for file in files]
         if not public_file_ids:
             return False 
     except Exception as e : 
@@ -276,19 +274,21 @@ def watch_one_drive_load_data(session, user_name, user_id, callbacks : callable 
         session.add(user)
         session.commit()
         session.refresh(user)
-    activity_end_point = "" # TODO
-    headers={'Authorization': 'Bearer '+ ms_auth.access_token}
-    user_disable = session.query(models.User).filter_by(user_id=user_id).first().disabled
-    print("Background Thread is started  ")
-    collection = session.query(models.Collection).filter_by(user_id=user_id).order_by(models.Collection.updated_at).first()
+        raise Exception("Not Authenticated Error")
+ 
+    activity_end_point = GRAPH_API_ENDPOINT+"/me/drive/recent"  
+    headers={'Authorization': 'Bearer '+ ms_auth._access_token}
+    user_disable = session.query(models.User).filter_by(user_id=user_id).first().one_drive_disabled
+    print("OneDrive Background Thread is started  ")
+    collection = session.query(models.Collection).filter_by(user_id=user_id).order_by(models.Collection.one_drive_updated_at).first()
     while not user_disable:
+        print('running One drive')
         current_time = datetime.datetime.now()
         current_time_formate=current_time.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
         previous_time_formate=collection.one_drive_updated_at.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'        
         try:            
             filter_query = f"lastModifiedDateTime lt {current_time_formate} and lastModifiedDateTime gt {previous_time_formate} "
             # Parameters for the request
-            file_ids =[]
             params = {'$filter': filter_query}
             response  = requests.get(activity_end_point,params=params, headers=headers).json()
             try:
@@ -296,11 +296,11 @@ def watch_one_drive_load_data(session, user_name, user_id, callbacks : callable 
             except:
                 raise Exception(str(response))
             file_list=list(set(file_ids))
-        # print("documents lodes : ", callbacks(file_list))
+            print(file_list)
             if file_list:
                 print('reading new files : ',file_list)
                 try:
-                    callbacks(file_list,collection.collection_name)
+                    callbacks(user_name, ms_auth._access_token, file_list)
                     print('Reading Successful.')
                 except Exception as e:
                     print("Error Occurs while Reading")
@@ -313,5 +313,5 @@ def watch_one_drive_load_data(session, user_name, user_id, callbacks : callable 
 
         except Exception as e:
             pass
-        user_disable = session.query(models.User).filter_by(user_id=user_id).first().disabled
+        user_disable = session.query(models.User).filter_by(user_id=user_id).first().one_drive_disabled
         
