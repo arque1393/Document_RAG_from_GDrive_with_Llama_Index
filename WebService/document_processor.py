@@ -7,10 +7,10 @@ from llama_index.core.ingestion import IngestionPipeline
 from llama_index.llms.gemini import Gemini 
 from llama_index.core import Document 
 from constants import GOOGLE_GEMINI_API_KEY, PARAGRAPH_SPLITTER_EXPRESSION
-
+from typing import Iterable
 nest_asyncio.apply()
 
-def process_document(documents:list[Document]):
+def process_document(documents:list[Document], source, extra_metadata:Iterable[dict] = None):
     """It is a simple document processor that do following Tasks :
         1. Divide the text into Paragraph and extract paragraph No and store in metadata for future 
         2. Divide Documents into smaller chunks and store into Nodes. 
@@ -25,6 +25,7 @@ def process_document(documents:list[Document]):
         paragraph_count = 1
         text = document.text
         metadata = document.metadata
+        metadata['Drive'] = source
         splitted_text = re.split(PARAGRAPH_SPLITTER_EXPRESSION,text)
         for text in splitted_text:
             metadata['paragraph_no'] = paragraph_count
@@ -51,7 +52,7 @@ def process_metadata(metadata:dict):
         _type_: Required Metadata 
     """
     if not metadata: return "No Metadata found"
-    extractor_list = ['author','file name', 'document_title', 'page_label','paragraph_no','created at', 'modified at'] 
+    extractor_list = ['author','file name', 'document_title', 'page_label','paragraph_no','created at', 'modified at', 'Drive', 'file_path'] 
     extracted_metadata={}
     metadata=iter(metadata.values()).__next__()
     for key in extractor_list :

@@ -23,7 +23,7 @@ def store_data_callback(username:str)-> callable:
         if not docs:
             raise Exception("No Datas is loaded")        
         try:
-            nodes = process_document(docs)
+            nodes = process_document(docs,"Google Drive")
             _ = chroma_index.create_index(nodes=nodes)           
         except Exception as e:
             print('Error occurs in Indexing', e)
@@ -60,7 +60,7 @@ def store_data_from_onedrive(username:str, access_token:str, file_list=None, fol
     if not docs:
         raise Exception("No Data is loaded")        
     try:
-        nodes = process_document(docs)
+        nodes = process_document(docs, "One Drive")
         _ = chroma_index.create_index(nodes=nodes)           
     except Exception as e:
         print('Error occurs in Indexing', e)
