@@ -3,7 +3,8 @@ from fastapi import Depends, FastAPI, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 from db import models 
-from constants import  ACCESS_TOKEN_EXPIRE_MINUTES, MS_CLIENT_ID
+import time 
+from constants import  ACCESS_TOKEN_EXPIRE_MINUTES, MS_CLIENT_ID, ONEDRIVE_CREDENTIAL_DIR,ONEDRIVE_LOGIN_EXPIRE_DURATION
 from datetime import  timedelta,datetime
 from models import User,UserCreate,Token,DriveFolderInfo,Query
 from auth_utils import (get_current_active_user,authenticate_user,google_auth,
@@ -152,21 +153,32 @@ async def connect_one_drive (current_user: Annotated[User, Depends(get_current_a
 
 
 
-# @app.post('/user/connect/one_drive/read')
-# async def connect_one_drive (current_user: Annotated[User, Depends(get_current_active_user)],session: Session = Depends(get_session)):  
-#     response= {"message":""}
-#     if not session.query(models.Collection).filter_by(user_id=current_user.user_id).first():
-#         new_collection =  models.Collection(collection_id=current_user.username,
-#                         collection_name=current_user.username, user_id=current_user.user_id,
-#                         created_at = datetime.now(), updated_at =  datetime.now())     
-#         session.add(new_collection)
-#         session.commit()
-#         session.refresh(new_collection)
-#     msauth = MSAuth(client_id=MS_CLIENT_ID)  
-#     _ = msauth.get_token(current_user.username)      
-#     access_token = msauth._access_token  
-#     store_data_from_onedrive(username=current_user.username, access_token=access_token)
-    
+@app.post('/user/connect/one_drive/read')
+async def read_data_from_one_drive(current_user: Annotated[User, Depends(get_current_active_user)],session: Session = Depends(get_session)):  
+    response = {"message":""}
+    if not session.query(models.Collection).filter_by(user_id=current_user.user_id).first():
+        new_collection =  models.Collection(collection_id=current_user.username,
+                        collection_name=current_user.username, user_id=current_user.user_id,
+                        created_at = datetime.now(), updated_at =  datetime.now())     
+        session.add(new_collection)
+        session.commit()
+        session.refresh(new_collection)
+    c_time = time.time()
+    while not (ONEDRIVE_CREDENTIAL_DIR/current_user.username/'token.b').exist() :
+        if time.time()- c_time > ONEDRIVE_LOGIN_EXPIRE_DURATION : 
+            raise HTTPException(status_code=401, detail='Microsoft Auth Token is not found')
+        # time.sleep (.1)
+        continue
+    msauth = MSAuth(client_id=MS_CLIENT_ID)  
+    _ = msauth.get_token(current_user.username)      
+    try : access_token = msauth._access_token  
+    except : raise HTTPException(status_code=401, detail = 'Not Connected to microsoft')
+    try:
+        store_data_from_onedrive(username=current_user.username, access_token=access_token)
+        response['message']='Data has been read'
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'{e}')
+    return response
 
 
 

@@ -109,7 +109,6 @@ def watch_drive_load_data(service, session, user_id, callbacks : callable ):
             collection.updated_at = current_time
             session.commit()
             session.refresh(collection)
-        # time.sleep(MONITORING_TIME_DELAY)
         except Exception as e:
             # print(f"Error on fetching information of from folder {collection.collection_name} \n\n:", e)
             # print("Retrying.....")
@@ -118,6 +117,8 @@ def watch_drive_load_data(service, session, user_id, callbacks : callable ):
             # exit()
             pass
         # Checking Condition
+        time.sleep(MONITORING_TIME_DELAY)
+        
         user_disable = session.query(models.User).filter_by(user_id=user_id).first().disabled
         
 
@@ -291,7 +292,7 @@ def watch_one_drive_load_data(session, user_name, user_id, callbacks : callable 
     print("OneDrive Background Thread is started  ")
     collection = session.query(models.Collection).filter_by(user_id=user_id).order_by(models.Collection.one_drive_updated_at).first()
     while not user_disable:
-        print('running One drive')
+        # print('running One drive')
         current_time = datetime.datetime.now()
         current_time_formate=current_time.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
         previous_time_formate=collection.one_drive_updated_at.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'        
@@ -305,7 +306,7 @@ def watch_one_drive_load_data(session, user_name, user_id, callbacks : callable 
             except:
                 raise Exception(str(response))
             file_list=list(set(file_ids))
-            print(file_list)
+            # print(file_list)
             if file_list:
                 print('reading new files : ',file_list)
                 try:
