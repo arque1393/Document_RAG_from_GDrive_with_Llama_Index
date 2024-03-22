@@ -1,8 +1,8 @@
 # Basic Module 
-
 import datetime 
 import time 
-
+import re
+import os
 # For OAuth and maintaining Drive Events 
 from googleapiclient.errors import HttpError
 from pathlib import Path
@@ -10,18 +10,12 @@ from pathlib import Path
 from WebService.constants import ( GOOGLE_DRIVE_ACTIVITY_PAGE_SIZE,MS_CLIENT_ID,GRAPH_API_ENDPOINT,
                         ONE_DRIVE_ITEM_ENDPOINT,MONITORING_TIME_DELAY, TEMP_STORE_PATH, GDRIVE_ACCEPT_MIME_TYPES)
 from typing import Any,Optional,Tuple,Iterable
-import re
 from WebService.db import models 
-
 ## OneDrive Utilities import 
-
-import os
 from threading import Thread
 import requests
 from llama_index.core import SimpleDirectoryReader
-
 from WebService.utils.auth import MSAuth
-
 class DriveFolderDoesNotExist(Exception):
     def __init__(self, message = "Unable to find the folder ID in your Google Drive Account.\n Do not enter shared folder's link.") -> None:
         super().__init__()
@@ -34,10 +28,8 @@ class DriveFolderDoesNotExist(Exception):
 def extract_file_ids(target_list:list[Any]):
     return [target['driveItem']['name'][6:] for target in target_list 
             if target['driveItem']['mimeType'] != 'application/vnd.google-apps.folder']
-
 reader_activity_list:list[str] = ['create','edit','rename']
 remove_activity:str = 'delete'
-
 def check_folder_permission(service, folder_id):
     try:
         permissions = service.permissions().list(fileId=folder_id, fields="permissions(type)").execute()
@@ -49,13 +41,11 @@ def check_folder_permission(service, folder_id):
             raise Exception(message = "This Folder belongs to another Google Account")            
         else :
             raise Exception(f"{e}")
-
 ### Define function to check Drive Updates
 def watch_drive_load_data(service, session, user_id, callbacks : callable ):
     """Watch Drive check if any changes happens or not.
     This Works in a loop controlled by the db.models.User.disabled parameter. 
     If New File Uploaded or created or edited it extract the file ID and using callbacks store in to VectorStoreIndex
-
     Args:
         service : GoogleDriveService or Resource object  :
             Use to fetch Drive activity Information 
@@ -69,19 +59,14 @@ def watch_drive_load_data(service, session, user_id, callbacks : callable ):
     print("Background Thread is started  ")
     collection = session.query(models.Collection).filter_by(user_id=user_id).order_by(models.Collection.updated_at).first()
     while not user_disable:
-        
-            
         current_time = datetime.datetime.now()
         current_time_formate=current_time.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")+'+00:00'
         previous_time_formate=collection.updated_at.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")+'+00:00'
-        
         try:
-            
             results = service.activity().query(body={
             "filter":f'time > "{previous_time_formate}" AND time < "{current_time_formate}"',
             # 'ancestorName':f"items/{collection.collection_id}",
             "pageSize": GOOGLE_DRIVE_ACTIVITY_PAGE_SIZE}).execute()
-            
             activities = results.get('activities', [])
             deleted_file_list=[]
             file_list:list[str] = []
@@ -93,7 +78,6 @@ def watch_drive_load_data(service, session, user_id, callbacks : callable ):
             for item in file_list :
                 if item in deleted_file_list:
                     file_list.remove(item)
-            
             file_list=list(set(file_list))
         # print("documents lodes : ", callbacks(file_list))
             if file_list:
@@ -118,15 +102,10 @@ def watch_drive_load_data(service, session, user_id, callbacks : callable ):
             pass
         # Checking Condition
         time.sleep(MONITORING_TIME_DELAY)
-        
         user_disable = session.query(models.User).filter_by(user_id=user_id).first().disabled
-        
-
-
 def drive_link_to_folder_name_and_id ( service, folder_link:str)-> Tuple[str,str]:
     pattern = r'/folders/([\w-]+)'
     match = re.search(pattern, folder_link)
-    
     if match:   
         folder_id = match.group(1)
     else : 
@@ -134,11 +113,9 @@ def drive_link_to_folder_name_and_id ( service, folder_link:str)-> Tuple[str,str
     folder_info = service.files().get(fileId=folder_id, fields="name").execute()
     return (str(folder_info['name']),folder_id)
     # return folder_link
-
 def read_drive_folder(service,collection_name, callbacks):
     """Watch Drive check if any changes happens or not.
     This Works only once If New File Uploaded or created or edited it extract the file ID and using callbacks store in to VectorStoreIndex
-
     Args:
         service : GoogleDriveService or Resource object  :
             Use to fetch Drive activity Information 
@@ -147,7 +124,6 @@ def read_drive_folder(service,collection_name, callbacks):
         folder_name : str
             Use to pass callback as collection name   
         callbacks (callable): the function that store the file content in Vector Database
-        
         update_time:str 
             If available then search activities after updated time 
     """
@@ -172,15 +148,12 @@ def read_drive_folder(service,collection_name, callbacks):
 ############################################################################################
 ################################ One Drive Access Utilities ################################
 ############################################################################################
-
-
 class OneDriveReader():
     ''' Approximate Replicate of Llama Index's OneDriveLoader 
     '''
     def __init__(self,username:str, access_token:str) -> None:
         self.access_token = access_token
         self.temp_store_path = TEMP_STORE_PATH/username
-        
     def _get_headers(self):
         access_token = self.access_token
         return {'Authorization': 'Bearer '+ access_token}
@@ -236,38 +209,27 @@ class OneDriveReader():
                 self.temp_store_path.mkdir(parents=True)
             with open(self.temp_store_path / f'{item.get("id")}{file_extension}', 'wb')as f:
                 f.write(content)
-        
         return file_dict
-            
     def load_data(self,folder_id:str|None =None, file_ids:Iterable[str]|None =None):
         if self.temp_store_path.exists():
             self._remove_content(self.temp_store_path)
         else : 
             self.temp_store_path.mkdir(parents=True)
         metadata={}
-        
         if folder_id:
             metadata.update( self._parse_folder_load_files(folder_id))
         elif file_ids:
             metadata.update( self._load_files_from_file_ids(file_ids))
         else: raise Exception("folder_id and file_ids both can not be empty ")
-        
-        # print(metadata)
         documents = SimpleDirectoryReader(input_dir = self.temp_store_path.resolve().__str__(),
                             file_metadata = lambda file_name: metadata[os.path.splitext(os.path.basename(file_name))[0]]).load_data()
         self._remove_content(self.temp_store_path)
         return documents
-    
-
-
-
-
 ### Define function to check Drive Updates
 def watch_one_drive_load_data(session, user_name, user_id, callbacks : callable ):
     """Watch Drive check if any changes happens or not.
     This Works in a loop controlled by the db.models.User.disabled parameter. 
     If New File Uploaded or created or edited it extract the file ID and using callbacks store in to VectorStoreIndex
-
     Args:
         service : GoogleDriveService or Resource object  :
             Use to fetch Drive activity Information 
@@ -285,7 +247,6 @@ def watch_one_drive_load_data(session, user_name, user_id, callbacks : callable 
         session.commit()
         session.refresh(user)
         raise Exception("Not Authenticated Error")
- 
     activity_end_point = GRAPH_API_ENDPOINT+"/me/drive/recent"  
     headers={'Authorization': 'Bearer '+ ms_auth._access_token}
     user_disable = session.query(models.User).filter_by(user_id=user_id).first().one_drive_disabled
@@ -306,7 +267,6 @@ def watch_one_drive_load_data(session, user_name, user_id, callbacks : callable 
             except:
                 raise Exception(str(response))
             file_list=list(set(file_ids))
-            # print(file_list)
             if file_list:
                 print('reading new files : ',file_list)
                 try:
@@ -320,7 +280,6 @@ def watch_one_drive_load_data(session, user_name, user_id, callbacks : callable 
             collection.one_drive_updated_at = current_time
             session.commit()
             session.refresh(collection)
-
         except Exception as e:
             pass
         user_disable = session.query(models.User).filter_by(user_id=user_id).first().one_drive_disabled

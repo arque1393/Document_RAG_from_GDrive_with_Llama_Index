@@ -127,7 +127,7 @@ def google_auth(username):
         Tuple of Two Service of Google Drive 
     """
 
-    credentials:Any = None
+    credentials:Any|None = None
     token_path = Path(fr"./CredentialHub/{username}").resolve()
     if not token_path.exists():
         token_path.mkdir(parents=True)

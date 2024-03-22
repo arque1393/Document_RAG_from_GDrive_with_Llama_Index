@@ -20,7 +20,7 @@ from contextlib import asynccontextmanager
 ### Connecting Frontend 
 from fastapi.responses import RedirectResponse
 from subprocess import Popen, DEVNULL
-Popen(["streamlit", "run", "../Frontend/main.py"], stdout=DEVNULL, stderr=DEVNULL)
+Popen(["streamlit", "run", "./Frontend/main.py"], stdout=DEVNULL, stderr=DEVNULL)
 
 models.Base.metadata.create_all(engine)
 app = FastAPI()
