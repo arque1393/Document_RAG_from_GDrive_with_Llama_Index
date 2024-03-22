@@ -159,7 +159,7 @@ async def read_data_from_one_drive(current_user: Annotated[User, Depends(get_cur
     if not session.query(models.Collection).filter_by(user_id=current_user.user_id).first():
         new_collection =  models.Collection(collection_id=current_user.username,
                         collection_name=current_user.username, user_id=current_user.user_id,
-                        created_at = datetime.now(), updated_at =  datetime.now())     
+                        created_at = datetime.now(), updated_at =  datetime.now(), one_drive_updated_at = datetime.now())     
         session.add(new_collection)
         session.commit()
         session.refresh(new_collection)
