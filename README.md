@@ -149,8 +149,7 @@ pip install -r requirements.txt
 #### Running Backend Server 
 With Running Backend Server Frontend Server will run automatically 
 ```bash
-cd WebService
-python fast_api_main.py
+uvicorn WebService.fast_api_main:app
 ```
 
 

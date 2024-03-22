@@ -19,3 +19,4 @@ demo*
 *.pem
 .tmp*
 .exe
+CredentialHub/
