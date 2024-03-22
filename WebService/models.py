@@ -13,6 +13,7 @@ class User(BaseModel):
     username: str
     email: str
     disabled: bool
+    one_drive_disabled:bool
     _password_hash:str
     class Config:
         orm_mode = True

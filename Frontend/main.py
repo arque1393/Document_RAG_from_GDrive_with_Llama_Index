@@ -18,8 +18,10 @@ st.write("Click to Get Collection List to View Your Folder Collection ")
 
         
 button_google = st.sidebar.button("Connect to Google Drive")
-button_one_drive = st.sidebar.button("Connect to One Drive")    
+button_one_drive = st.sidebar.button("Connect to One Drive") 
+button_one_drive_connection_verification   = st.sidebar.button("Verify connection") 
 read_one_derive = st.sidebar.button("Read _One Drive Data")  
+
 if button_google :
     res = connect_to_google()
     try: 
@@ -35,20 +37,17 @@ if button_one_drive:
         # st.write(res)
         code  = res['user_code']
         st.sidebar.write(f"Code is {code}")
+    except : 
+        pass
+if button_one_drive_connection_verification:
+    try :
         res = connect_to_onedrive('/verify')
-        try :
-            mes  = res['message']
-            st.success(mes)
-        except:
-            mes  = res['detail']
-            st.error(mes)
+        mes  = res['message']
+        st.success(mes)
     except:
-        try :
-            mes  = res['message']
-            st.success(mes)
-        except:
-            mes  = res['detail']
-            st.error(mes)
+        mes  = res['detail']
+        st.error(mes)
+
 
 if read_one_derive :
     res = connect_to_onedrive('/read')
