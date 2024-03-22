@@ -163,12 +163,6 @@ async def read_data_from_one_drive(current_user: Annotated[User, Depends(get_cur
         session.add(new_collection)
         session.commit()
         session.refresh(new_collection)
-    c_time = time.time()
-    while not (ONEDRIVE_CREDENTIAL_DIR/current_user.username/'token.b').exist() :
-        if time.time()- c_time > ONEDRIVE_LOGIN_EXPIRE_DURATION : 
-            raise HTTPException(status_code=401, detail='Microsoft Auth Token is not found')
-        # time.sleep (.1)
-        continue
     msauth = MSAuth(client_id=MS_CLIENT_ID)  
     _ = msauth.get_token(current_user.username)      
     try : access_token = msauth._access_token  
