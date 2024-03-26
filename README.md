@@ -146,13 +146,17 @@ source ./env/Scripts/activate
 pip install -r requirements.txt
 
 ```
+
+#### Install Requirements Using Conda Environment 
+```bash
+conda create -n llama_index -f requirements.yml
+conda activate llama_index
+```
 #### Running Backend Server 
 With Running Backend Server Frontend Server will run automatically 
 ```bash
-cd WebService
-python fast_api_main.py
+uvicorn WebService.fast_api_main:app
 ```
-
 
 
 ## Limitations 

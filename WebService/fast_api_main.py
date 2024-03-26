@@ -2,25 +2,25 @@ import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
-from db import models 
+from WebService.db import models 
 import time 
-from constants import  ACCESS_TOKEN_EXPIRE_MINUTES, MS_CLIENT_ID, ONEDRIVE_CREDENTIAL_DIR,ONEDRIVE_LOGIN_EXPIRE_DURATION
+from WebService.constants import  ACCESS_TOKEN_EXPIRE_MINUTES, MS_CLIENT_ID, ONEDRIVE_CREDENTIAL_DIR,ONEDRIVE_LOGIN_EXPIRE_DURATION
 from datetime import  timedelta,datetime
-from models import User,UserCreate,Token,DriveFolderInfo,Query
-from auth_utils import (get_current_active_user,authenticate_user,google_auth,
+from WebService.models import User,UserCreate,Token,DriveFolderInfo,Query
+from WebService.utils.auth import (get_current_active_user,authenticate_user,google_auth,
             is_email_or_username_taken,get_password_hash,create_access_token, MSAuth)
 
-from drive_utils import( read_drive_folder,watch_one_drive_load_data,
+from WebService.utils.drive import( read_drive_folder,watch_one_drive_load_data,
             watch_drive_load_data,DriveFolderDoesNotExist,check_folder_permission)
-from db.setup import get_session,engine
+from WebService.db.setup import get_session,engine
 from sqlalchemy.orm import Session
-from callbacks import store_data_callback, get_answer, store_data_from_onedrive
+from WebService.utils.callbacks import store_data_callback, get_answer, store_data_from_onedrive
 from contextlib import asynccontextmanager
 
 ### Connecting Frontend 
 from fastapi.responses import RedirectResponse
 from subprocess import Popen, DEVNULL
-Popen(["streamlit", "run", "../Frontend/main.py"], stdout=DEVNULL, stderr=DEVNULL)
+Popen(["streamlit", "run", "./Frontend/main.py"], stdout=DEVNULL, stderr=DEVNULL)
 
 models.Base.metadata.create_all(engine)
 app = FastAPI()
@@ -159,7 +159,7 @@ async def read_data_from_one_drive(current_user: Annotated[User, Depends(get_cur
     if not session.query(models.Collection).filter_by(user_id=current_user.user_id).first():
         new_collection =  models.Collection(collection_id=current_user.username,
                         collection_name=current_user.username, user_id=current_user.user_id,
-                        created_at = datetime.now(), updated_at =  datetime.now())     
+                        created_at = datetime.now(), updated_at =  datetime.now(), one_drive_updated_at = datetime.now())     
         session.add(new_collection)
         session.commit()
         session.refresh(new_collection)

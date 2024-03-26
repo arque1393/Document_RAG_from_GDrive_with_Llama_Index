@@ -49,3 +49,5 @@ psycopg2
 streamlit 
 streamlit-option-menu
 streamlit-extras
+msal
+python-multipart
